@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.express as px
 from scipy.stats import pearsonr
 
 # --- Set Page Config ---
@@ -37,44 +38,59 @@ with tab1:
     col4, col5 = st.columns(2)
 
     with col4:
-        fig1, ax1 = plt.subplots(figsize=(8, 4))
-        sns.barplot(data=combined_data, x='Quarter', y='Total_Crimes', ax=ax1, palette='Reds')
-        ax1.set_title("Total Crimes per Quarter")
-        ax1.tick_params(axis='x', rotation=45)
-        for i, val in enumerate(combined_data['Total_Crimes']):
-            ax1.text(i, val + 200, f"{val:,}", ha='center', va='bottom', fontsize=8)
-        st.pyplot(fig1)
+        fig1 = px.bar(
+            combined_data,
+            x='Quarter',
+            y='Total_Crimes',
+            title="Total Crimes per Quarter",
+            text='Total_Crimes',
+            color='Total_Crimes',
+            color_continuous_scale='Reds'
+        )
+        fig1.update_traces(texttemplate='%{text:.2s}', textposition='outside')
+        fig1.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig1, use_container_width=True)
 
     with col5:
         top_crimes = sao['Crime type'].value_counts().nlargest(6)
-        fig2, ax2 = plt.subplots()
-        ax2.pie(top_crimes, labels=top_crimes.index, autopct='%1.1f%%', startangle=140)
-        ax2.set_title("Top 6 Crime Types Distribution")
-        st.pyplot(fig2)
+        fig2 = px.pie(
+            names=top_crimes.index,
+            values=top_crimes.values,
+            title="Top 6 Crime Types Distribution",
+            hole=0.3
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("---")
     col6, col7 = st.columns(2)
 
     with col6:
-        fig3, ax3 = plt.subplots(figsize=(8, 4))
-        sns.barplot(data=combined_data, x='Quarter', y='Life_Satisfaction_Mean_Score', ax=ax3, palette='Blues')
-        ax3.set_title("Life Satisfaction per Quarter")
-        ax3.tick_params(axis='x', rotation=45)
-        for i, val in enumerate(combined_data['Life_Satisfaction_Mean_Score']):
-            ax3.text(i, val + 0.02, f"{val:.2f}", ha='center', va='bottom', fontsize=8)
-        st.pyplot(fig3)
+        fig3 = px.bar(
+            combined_data,
+            x='Quarter',
+            y='Life_Satisfaction_Mean_Score',
+            title="Life Satisfaction per Quarter",
+            text='Life_Satisfaction_Mean_Score',
+            color='Life_Satisfaction_Mean_Score',
+            color_continuous_scale='Blues'
+        )
+        fig3.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        fig3.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig3, use_container_width=True)
 
     with col7:
-        fig4, ax4 = plt.subplots(figsize=(8, 4))
-        sns.barplot(data=combined_data, x='Quarter', y='Anxiety_Mean_Score', ax=ax4, palette='Purples')
-        ax4.set_title("Anxiety per Quarter")
-        ax4.tick_params(axis='x', rotation=45)
-        for i, val in enumerate(combined_data['Anxiety_Mean_Score']):
-            ax4.text(i, val + 0.02, f"{val:.2f}", ha='center', va='bottom', fontsize=8)
-        st.pyplot(fig4)
-
-    st.markdown("---")
-    st.markdown("Built with ❤️ using Streamlit | Data: British Transport Police & ONS")
+        fig4 = px.bar(
+            combined_data,
+            x='Quarter',
+            y='Anxiety_Mean_Score',
+            title="Anxiety per Quarter",
+            text='Anxiety_Mean_Score',
+            color='Anxiety_Mean_Score',
+            color_continuous_scale='Purples'
+        )
+        fig4.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+        fig4.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(fig4, use_container_width=True)
 
 # --- TAB 2: Crime Trends ---
 with tab2:
@@ -85,93 +101,90 @@ with tab2:
     filtered = sao[sao['Crime type'] == selected_crime].copy()
     trend = filtered.groupby('Quarter').size().reset_index(name='Count')
 
-    fig5, ax5 = plt.subplots(figsize=(10, 4))
-    sns.lineplot(data=trend, x='Quarter', y='Count', marker='o', ax=ax5)
-    ax5.set_title(f"{selected_crime} Trend Over Time")
-    ax5.tick_params(axis='x', rotation=45)
-    st.pyplot(fig5)
+    fig5 = px.line(trend, x='Quarter', y='Count', markers=True, title=f"{selected_crime} Trend Over Time")
+    st.plotly_chart(fig5, use_container_width=True)
 
     st.subheader(f"🗺️ Locations of {selected_crime} (Latest Quarter Only)")
     latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
     map_data = filtered[filtered['Quarter'] == latest_quarter][['Latitude', 'Longitude']].dropna()
     map_data = map_data.rename(columns={"Latitude": "latitude", "Longitude": "longitude"})
-    map_data["latitude"] = map_data["latitude"].astype(float)
-    map_data["longitude"] = map_data["longitude"].astype(float)
 
     if not map_data.empty:
         st.map(map_data, zoom=6)
     else:
         st.warning("No location data available for this crime type in the latest quarter.")
 
-
-
 # --- TAB 3: Well-being Trends ---
 with tab3:
     st.header("😊 Well-being Trends (ONS Area Data)")
-    st.success("✅ Tab 3 loaded successfully")
 
-    # Area Filter
     available_areas = sorted(ons_area['Area'].dropna().unique())
     selected_area = st.selectbox("Select Region (Area)", available_areas)
 
     filtered_area = ons_area[ons_area['Area'] == selected_area]
 
-    # Line Chart: Life Satisfaction and Anxiety
-    fig6, ax6 = plt.subplots(figsize=(10, 4))
-    sns.lineplot(data=filtered_area, x='Quarter', y='Life_Satisfaction_Mean_Score', label='Life Satisfaction', marker='o')
-    sns.lineplot(data=filtered_area, x='Quarter', y='Anxiety_Mean_Score', label='Anxiety', marker='o')
-    ax6.set_title(f"Well-being Trends in {selected_area}")
-    ax6.set_ylabel("Mean Score")
-    ax6.tick_params(axis='x', rotation=45)
-    ax6.legend()
-    st.pyplot(fig6)
+    fig6 = px.line(
+        filtered_area,
+        x='Quarter',
+        y=['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score'],
+        title=f"Well-being Trends in {selected_area}",
+        markers=True
+    )
+    st.plotly_chart(fig6, use_container_width=True)
 
     st.markdown("---")
 
-    # Bar chart comparing areas in selected quarter
     selected_quarter = st.selectbox("Compare by Quarter", sorted(ons_area['Quarter'].unique()))
     compare_df = ons_area[ons_area['Quarter'] == selected_quarter]
 
     col8, col9 = st.columns(2)
 
     with col8:
-        fig7, ax7 = plt.subplots(figsize=(10, 4))
-        sns.barplot(data=compare_df, x='Life_Satisfaction_Mean_Score', y='Area', palette='Blues', ax=ax7)
-        ax7.set_title(f"Life Satisfaction by Area ({selected_quarter})")
-        for i, val in enumerate(compare_df['Life_Satisfaction_Mean_Score']):
-            ax7.text(val + 0.02, i, f"{val:.2f}", va='center')
-        st.pyplot(fig7)
+        fig7 = px.bar(
+            compare_df,
+            x='Life_Satisfaction_Mean_Score',
+            y='Area',
+            orientation='h',
+            title=f"Life Satisfaction by Area ({selected_quarter})",
+            color='Life_Satisfaction_Mean_Score',
+            color_continuous_scale='Blues'
+        )
+        st.plotly_chart(fig7, use_container_width=True)
 
     with col9:
-        fig8, ax8 = plt.subplots(figsize=(10, 4))
-        sns.barplot(data=compare_df, x='Anxiety_Mean_Score', y='Area', palette='Purples', ax=ax8)
-        ax8.set_title(f"Anxiety by Area ({selected_quarter})")
-        for i, val in enumerate(compare_df['Anxiety_Mean_Score']):
-            ax8.text(val + 0.02, i, f"{val:.2f}", va='center')
-        st.pyplot(fig8)
-
-
+        fig8 = px.bar(
+            compare_df,
+            x='Anxiety_Mean_Score',
+            y='Area',
+            orientation='h',
+            title=f"Anxiety by Area ({selected_quarter})",
+            color='Anxiety_Mean_Score',
+            color_continuous_scale='Purples'
+        )
+        st.plotly_chart(fig8, use_container_width=True)
 
 # --- TAB 4: Crime vs Well-being ---
 with tab4:
     st.header("🔗 Relationship Between Crime & Well-being")
 
-    # Scatter Plot: Crimes vs Life Satisfaction
-    fig9, ax9 = plt.subplots(figsize=(6, 4))
-    sns.regplot(data=combined_data, x='Total_Crimes', y='Life_Satisfaction_Mean_Score', ax=ax9)
-    ax9.set_title("Total Crimes vs Life Satisfaction")
-    st.pyplot(fig9)
+    fig9 = px.scatter(
+        combined_data,
+        x='Total_Crimes',
+        y='Life_Satisfaction_Mean_Score',
+        trendline="ols",
+        title="Total Crimes vs Life Satisfaction"
+    )
+    st.plotly_chart(fig9, use_container_width=True)
 
-    # Scatter Plot: Crimes vs Anxiety
-    fig10, ax10 = plt.subplots(figsize=(6, 4))
-    sns.regplot(data=combined_data, x='Total_Crimes', y='Anxiety_Mean_Score', ax=ax10)
-    ax10.set_title("Total Crimes vs Anxiety")
-    st.pyplot(fig10)
+    fig10 = px.scatter(
+        combined_data,
+        x='Total_Crimes',
+        y='Anxiety_Mean_Score',
+        trendline="ols",
+        title="Total Crimes vs Anxiety"
+    )
+    st.plotly_chart(fig10, use_container_width=True)
 
-    st.markdown("---")
-
-    # Correlation (Pearson)
-    from scipy.stats import pearsonr
     corr_ls, p_ls = pearsonr(combined_data['Total_Crimes'], combined_data['Life_Satisfaction_Mean_Score'])
     corr_anx, p_anx = pearsonr(combined_data['Total_Crimes'], combined_data['Anxiety_Mean_Score'])
 
@@ -180,15 +193,11 @@ with tab4:
         st.metric("📊 Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
     with col13:
         st.metric("📊 Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
-        
-        
-        
-        
-# --- TAB 5: Region Explorer (Map & Area Comparison) ---
+
+# --- TAB 5: Region Explorer ---
 with tab5:
     st.header("🗺️ Region Explorer")
 
-    # Aggregated averages by area
     area_avg = ons_area.groupby("Area").agg({
         "Life_Satisfaction_Mean_Score": "mean",
         "Anxiety_Mean_Score": "mean"
@@ -197,36 +206,30 @@ with tab5:
     col14, col15 = st.columns(2)
 
     with col14:
-        fig11, ax11 = plt.subplots(figsize=(10, 6))
-        sns.barplot(
-            data=area_avg.sort_values(by='Life_Satisfaction_Mean_Score'),
+        fig11 = px.bar(
+            area_avg.sort_values(by='Life_Satisfaction_Mean_Score'),
             x='Life_Satisfaction_Mean_Score',
             y='Area',
-            palette='coolwarm',
-            ax=ax11
+            orientation='h',
+            title="Avg. Life Satisfaction by Area",
+            color='Life_Satisfaction_Mean_Score',
+            color_continuous_scale='Tealgrn'
         )
-        ax11.set_title("Avg. Life Satisfaction by Area")
-        for i, val in enumerate(area_avg.sort_values(by='Life_Satisfaction_Mean_Score')['Life_Satisfaction_Mean_Score']):
-            ax11.text(val + 0.02, i, f"{val:.2f}", va='center')
-        st.pyplot(fig11)
+        st.plotly_chart(fig11, use_container_width=True)
 
     with col15:
-        fig12, ax12 = plt.subplots(figsize=(10, 6))
-        sns.barplot(
-            data=area_avg.sort_values(by='Anxiety_Mean_Score'),
+        fig12 = px.bar(
+            area_avg.sort_values(by='Anxiety_Mean_Score'),
             x='Anxiety_Mean_Score',
             y='Area',
-            palette='magma',
-            ax=ax12
+            orientation='h',
+            title="Avg. Anxiety by Area",
+            color='Anxiety_Mean_Score',
+            color_continuous_scale='Oranges'
         )
-        ax12.set_title("Avg. Anxiety by Area")
-        for i, val in enumerate(area_avg.sort_values(by='Anxiety_Mean_Score')['Anxiety_Mean_Score']):
-            ax12.text(val + 0.02, i, f"{val:.2f}", va='center')
-        st.pyplot(fig12)
+        st.plotly_chart(fig12, use_container_width=True)
 
-
-
-# --- TAB 6: Raw Data Viewer ---
+# --- TAB 6: Raw Data ---
 with tab6:
     st.header("📄 Raw Data Explorer & Download")
 
@@ -246,4 +249,3 @@ with tab6:
         st.dataframe(ons_area)
         csv_data = ons_area.to_csv(index=False).encode("utf-8")
         st.download_button("📥 Download ONS Area Data", data=csv_data, file_name="ONS_Area_Data.csv", mime="text/csv")
-
