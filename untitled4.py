@@ -2,7 +2,7 @@ import pandas as pd
 
 
 
-sao = pd.read_excel("/Users/apple/Desktop/ADAinB.xlsx")
+sao = pd.read_excel("ADAinB.xlsx")
 
 print(sao.head())
 
@@ -35,10 +35,9 @@ print(sao['LSOA code'].dropna().unique()[:10])
 
 
 
-df_age_group = pd.read_excel("/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Age Group")
-df_area = pd.read_excel("/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Area")
-df_gender = pd.read_excel("/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Gender")
-
+df_age_group = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Age Group")
+df_area = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Area")
+df_gender = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Gender")
 
 {
     "Age Group": {
@@ -98,7 +97,7 @@ print(ons_quarterly_avg)
 
 
 
-ons_file_path = "/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx"
+ons_file_path = "Life_Satisfaction_Anxiety_All_Quarters.xlsx"
 ons_area = pd.read_excel(ons_file_path, sheet_name="Area")
 
 sao['Month'] = pd.to_datetime(sao['Month'], format="%Y-%m")
@@ -153,7 +152,7 @@ combined_data = pd.merge(btp_quarterly, ons_quarterly, on="Quarter", how="inner"
 combined_data = combined_data.round(2)
 
 
-combined_output_path = "/Users/apple/Desktop/Combined_BTP_ONS_Quarterly_Data.xlsx"
+combined_output_path = "Combined_BTP_ONS_Quarterly_Data.xlsx"
 combined_data.to_excel(combined_output_path, index=False)
 
 combined_output_path
@@ -168,12 +167,12 @@ combined_data = pd.merge(btp_quarterly, ons_quarterly, on="Quarter", how="inner"
 
 print(combined_data.head())
 
-combined_output_path = "/Users/apple/Desktop/Combined_BTP_ONS_Quarterly_Data.xlsx"
+combined_output_path = "Combined_BTP_ONS_Quarterly_Data.xlsx"
 combined_data.to_excel(combined_output_path, index=False)
 
 
 from scipy.stats import pearsonr
-combined_data = pd.read_excel("/Users/apple/Desktop/Combined_BTP_ONS_Quarterly_Data.xlsx")
+combined_data = pd.read_excel("Combined_BTP_ONS_Quarterly_Data.xlsx")
 
 
 combined_data = combined_data.dropna()
