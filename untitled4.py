@@ -211,11 +211,11 @@ plt.show()
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 
-# Page setup
-st.set_page_config(page_title="UK Crime & Well-being Overview", layout="wide")
+st.set_page_config(page_title="UK Crime & Well-being Overview", layout="wide")  # ✅ FIRST ST COMMAND
+
 st.title("🚨 UK Crime and Public Well-being Dashboard")
 st.markdown("### Overview (2022–2024)")
 st.markdown("Gain insights into transport-related crime trends and well-being metrics across the UK.")
