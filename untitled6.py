@@ -287,9 +287,11 @@ with tab7:
         title="📉 Actual vs Predicted Crime Trends (With Forecast)"
     )
     st.plotly_chart(fig_pred, use_container_width=True)
-
-    st.success(f"Model R² Score: {model.score(X, y):.2f}")
-
+    
+    r2_score = model.score(X, y)
+    st.success(f"Model R² Score: {r2_score:.2f}")
+    
+    
 # --- TAB 8: Settings ---
 with tab8:
     st.header("⚙️ Dashboard Settings")
