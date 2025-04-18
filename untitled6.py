@@ -35,106 +35,122 @@ with tab1:
     col3.metric("😟 Avg. Anxiety", f"{combined_data['Anxiety_Mean_Score'].mean():.2f}")
 
     st.markdown("---")
-    col4, col5 = st.columns(2)
 
+    col4, col5 = st.columns(2)
+    
+    # Bar chart: Total crimes per quarter
     with col4:
         fig1 = px.bar(
-            combined_data,
-            x='Quarter',
-            y='Total_Crimes',
+            combined_data, x='Quarter', y='Total_Crimes',
             title="Total Crimes per Quarter",
-            text='Total_Crimes',
+            labels={'Total_Crimes': 'Total Crimes'},
             color='Total_Crimes',
             color_continuous_scale='Reds'
         )
-        fig1.update_traces(texttemplate='%{text:.2s}', textposition='outside')
-        fig1.update_layout(xaxis_tickangle=-45)
+        fig1.update_layout(xaxis_tickangle=-45, height=400)
         st.plotly_chart(fig1, use_container_width=True)
 
+    # Pie chart: Top 6 Crime Types
     with col5:
-        top_crimes = sao['Crime type'].value_counts().nlargest(6)
-        fig2 = px.pie(
-            names=top_crimes.index,
-            values=top_crimes.values,
-            title="Top 6 Crime Types Distribution",
-            hole=0.3
-        )
+        top_crimes = sao['Crime type'].value_counts().nlargest(6).reset_index()
+        top_crimes.columns = ['Crime type', 'Count']
+        fig2 = px.pie(top_crimes, names='Crime type', values='Count', title="Top 6 Crime Types Distribution")
         st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("---")
     col6, col7 = st.columns(2)
 
+    # Life Satisfaction bar chart
     with col6:
         fig3 = px.bar(
-            combined_data,
-            x='Quarter',
-            y='Life_Satisfaction_Mean_Score',
+            combined_data, x='Quarter', y='Life_Satisfaction_Mean_Score',
             title="Life Satisfaction per Quarter",
-            text='Life_Satisfaction_Mean_Score',
+            labels={'Life_Satisfaction_Mean_Score': 'Mean Score'},
             color='Life_Satisfaction_Mean_Score',
             color_continuous_scale='Blues'
         )
-        fig3.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-        fig3.update_layout(xaxis_tickangle=-45)
+        fig3.update_layout(xaxis_tickangle=-45, height=400)
         st.plotly_chart(fig3, use_container_width=True)
 
+    # Anxiety bar chart
     with col7:
         fig4 = px.bar(
-            combined_data,
-            x='Quarter',
-            y='Anxiety_Mean_Score',
+            combined_data, x='Quarter', y='Anxiety_Mean_Score',
             title="Anxiety per Quarter",
-            text='Anxiety_Mean_Score',
+            labels={'Anxiety_Mean_Score': 'Mean Score'},
             color='Anxiety_Mean_Score',
             color_continuous_scale='Purples'
         )
-        fig4.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-        fig4.update_layout(xaxis_tickangle=-45)
+        fig4.update_layout(xaxis_tickangle=-45, height=400)
         st.plotly_chart(fig4, use_container_width=True)
 
+    st.markdown("---")
+    st.markdown("Built with ❤️ using Streamlit, Plotly, and pandas | Data: British Transport Police & ONS")
+
+        
+        
+        
 # --- TAB 2: Crime Trends ---
 with tab2:
-    st.header("📈 Crime Trends Over Time")
+    st.header("📈 Crime Trends by Type & Quarter")
+    
+    # Filter and animate
     crime_types = sorted(sao['Crime type'].dropna().unique())
-    selected_crime = st.selectbox("Select Crime Type", crime_types)
+    selected_crimes = st.multiselect("Select Crime Types", crime_types, default=crime_types[:3])
+    filtered_sao = sao[sao['Crime type'].isin(selected_crimes)]
 
-    filtered = sao[sao['Crime type'] == selected_crime].copy()
-    trend = filtered.groupby('Quarter').size().reset_index(name='Count')
+    crime_anim = filtered_sao.groupby(['Quarter', 'Crime type']).size().reset_index(name='Count')
 
-    fig5 = px.line(trend, x='Quarter', y='Count', markers=True, title=f"{selected_crime} Trend Over Time")
-    st.plotly_chart(fig5, use_container_width=True)
+    fig = px.bar(
+        crime_anim,
+        x="Crime type",
+        y="Count",
+        color="Crime type",
+        animation_frame="Quarter",
+        range_y=[0, crime_anim['Count'].max() + 500],
+        title="Crime Trends Over Time"
+    )
+    fig.update_layout(height=500)
+    st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader(f"🗺️ Locations of {selected_crime} (Latest Quarter Only)")
-    latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
-    map_data = filtered[filtered['Quarter'] == latest_quarter][['Latitude', 'Longitude']].dropna()
-    map_data = map_data.rename(columns={"Latitude": "latitude", "Longitude": "longitude"})
-
-    if not map_data.empty:
-        st.map(map_data, zoom=6)
-    else:
-        st.warning("No location data available for this crime type in the latest quarter.")
+    st.markdown("---")
+    
 
 # --- TAB 3: Well-being Trends ---
+# --- TAB 3: Well-being Trends ---
 with tab3:
-    st.header("😊 Well-being Trends (ONS Area Data)")
+    st.header("😊 Well-being Trends by Region")
 
-    available_areas = sorted(ons_area['Area'].dropna().unique())
-    selected_area = st.selectbox("Select Region (Area)", available_areas)
+    # Select Area
+    areas = sorted(ons_area['Area'].dropna().unique())
+    selected_areas = st.multiselect("Select Region(s)", areas, default=areas[:3])
+    filtered_ons = ons_area[ons_area['Area'].isin(selected_areas)]
 
-    filtered_area = ons_area[ons_area['Area'] == selected_area]
+    # Line Charts: Trends Over Time
+    fig5 = px.line(
+        filtered_ons,
+        x="Quarter",
+        y="Life_Satisfaction_Mean_Score",
+        color="Area",
+        title="Life Satisfaction Trends"
+    )
+    st.plotly_chart(fig5, use_container_width=True)
 
     fig6 = px.line(
-        filtered_area,
-        x='Quarter',
-        y=['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score'],
-        title=f"Well-being Trends in {selected_area}",
-        markers=True
+        filtered_ons,
+        x="Quarter",
+        y="Anxiety_Mean_Score",
+        color="Area",
+        title="Anxiety Trends"
     )
     st.plotly_chart(fig6, use_container_width=True)
 
     st.markdown("---")
 
-    selected_quarter = st.selectbox("Compare by Quarter", sorted(ons_area['Quarter'].unique()))
+    # Additional Bar Charts: Compare by Quarter
+    st.subheader("📊 Compare Regions in a Specific Quarter")
+    selected_quarter = st.selectbox("Select Quarter", sorted(ons_area['Quarter'].unique()))
+
     compare_df = ons_area[ons_area['Quarter'] == selected_quarter]
 
     col8, col9 = st.columns(2)
@@ -163,41 +179,52 @@ with tab3:
         )
         st.plotly_chart(fig8, use_container_width=True)
 
+
+
+
 # --- TAB 4: Crime vs Well-being ---
 with tab4:
-    st.header("🔗 Relationship Between Crime & Well-being")
+    st.header("🔗 Crime vs Well-being Correlation")
 
+    # Scatter Plot: Crimes vs Life Satisfaction
     fig9 = px.scatter(
         combined_data,
         x='Total_Crimes',
         y='Life_Satisfaction_Mean_Score',
-        trendline="ols",
-        title="Total Crimes vs Life Satisfaction"
+        trendline='ols',
+        title='Total Crimes vs Life Satisfaction',
+        labels={'Total_Crimes': 'Total Crimes', 'Life_Satisfaction_Mean_Score': 'Life Satisfaction'}
     )
     st.plotly_chart(fig9, use_container_width=True)
 
+    # Scatter Plot: Crimes vs Anxiety
     fig10 = px.scatter(
         combined_data,
         x='Total_Crimes',
         y='Anxiety_Mean_Score',
-        trendline="ols",
-        title="Total Crimes vs Anxiety"
+        trendline='ols',
+        title='Total Crimes vs Anxiety',
+        labels={'Total_Crimes': 'Total Crimes', 'Anxiety_Mean_Score': 'Anxiety'}
     )
     st.plotly_chart(fig10, use_container_width=True)
 
+    # Correlation Stats
+    st.markdown("---")
     corr_ls, p_ls = pearsonr(combined_data['Total_Crimes'], combined_data['Life_Satisfaction_Mean_Score'])
     corr_anx, p_anx = pearsonr(combined_data['Total_Crimes'], combined_data['Anxiety_Mean_Score'])
 
-    col12, col13 = st.columns(2)
-    with col12:
-        st.metric("📊 Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
-    with col13:
-        st.metric("📊 Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
+    st.metric("📈 Correlation with Life Satisfaction", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
+    st.metric("📉 Correlation with Anxiety", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
+
+
 
 # --- TAB 5: Region Explorer ---
 with tab5:
     st.header("🗺️ Region Explorer")
 
+    st.markdown("Explore average well-being metrics across UK regions.")
+
+    # Aggregated averages by area
     area_avg = ons_area.groupby("Area").agg({
         "Life_Satisfaction_Mean_Score": "mean",
         "Anxiety_Mean_Score": "mean"
@@ -211,9 +238,9 @@ with tab5:
             x='Life_Satisfaction_Mean_Score',
             y='Area',
             orientation='h',
-            title="Avg. Life Satisfaction by Area",
+            title="Average Life Satisfaction by Area",
             color='Life_Satisfaction_Mean_Score',
-            color_continuous_scale='Tealgrn'
+            color_continuous_scale='Blues'
         )
         st.plotly_chart(fig11, use_container_width=True)
 
@@ -223,15 +250,20 @@ with tab5:
             x='Anxiety_Mean_Score',
             y='Area',
             orientation='h',
-            title="Avg. Anxiety by Area",
+            title="Average Anxiety by Area",
             color='Anxiety_Mean_Score',
-            color_continuous_scale='Oranges'
+            color_continuous_scale='Purples'
         )
         st.plotly_chart(fig12, use_container_width=True)
 
-# --- TAB 6: Raw Data ---
+    st.markdown("---")
+
+
+
+
+# --- TAB 6: Raw Data Viewer ---
 with tab6:
-    st.header("📄 Raw Data Explorer & Download")
+    st.header("📄 Raw Data Viewer")
 
     dataset_choice = st.radio("Select Dataset", ("Combined", "BTP", "ONS"))
 
