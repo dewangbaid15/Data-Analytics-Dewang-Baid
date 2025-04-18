@@ -67,16 +67,17 @@ with tab2:
 
     if selected_crimes:
         filtered = sao[sao['Crime type'].isin(selected_crimes)].copy()
-        crime_trend = filtered.groupby(['Quarter', 'Quarter_dt', 'Crime type']).size().reset_index(name='Count')
+        crime_trend = filtered.groupby(['Quarter', 'Crime type']).size().reset_index(name='Count')
 
-        fig3 = px.line(
+        fig3 = px.bar(
             crime_trend,
-            x='Quarter_dt', y='Count', color='Crime type',
-            markers=True,
-            title="Crime Trends Over Time",
+            x='Crime type', y='Count',
+            color='Crime type',
+            animation_frame='Quarter',
+            title="Animated Crime Trends by Type Over Quarters",
+            range_y=[0, crime_trend['Count'].max() * 1.2],
             color_discrete_sequence=px.colors.qualitative.Set3
         )
-        fig3.update_layout(xaxis_title="Quarter", yaxis_title="Number of Crimes")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.subheader("🗺️ Crime Locations Map")
@@ -98,7 +99,6 @@ with tab2:
 # --- TAB 3: Well-being Trends ---
 with tab3:
     st.header("😊 Well-being Trends (ONS Area Data)")
-
     available_areas = sorted(ons_area['Area'].dropna().unique())
     selected_area = st.selectbox("Select Region (Area)", available_areas)
     filtered_area = ons_area[ons_area['Area'] == selected_area]
@@ -143,7 +143,6 @@ with tab3:
 # --- TAB 4: Deep Dive ---
 with tab4:
     st.header("🔍 Deep Dive: Crime vs Well-being")
-
     fig7 = px.scatter(
         combined_data,
         x='Total_Crimes', y='Life_Satisfaction_Mean_Score',
@@ -203,7 +202,6 @@ with tab5:
 with tab6:
     st.header("📄 Raw Data")
     dataset_choice = st.radio("Select Dataset", ("Combined", "BTP", "ONS"))
-
     if dataset_choice == "Combined":
         st.dataframe(combined_data)
     elif dataset_choice == "BTP":
@@ -214,7 +212,6 @@ with tab6:
 # --- TAB 7: Predictive Insights ---
 with tab7:
     st.header("🧪 Predictive Insights")
-
     st.markdown("Predict crime volume trends using simple regression")
     combined_data['Quarter_Index'] = range(1, len(combined_data) + 1)
     X = combined_data[['Quarter_Index']]
@@ -251,9 +248,11 @@ with tab8:
     else:
         st.markdown("""
             <style>
-            body, .stApp { background-color: #ffffff; color: black; }
-            .css-18ni7ap { background-color: #ffffff !important; }
-            .css-1cpxqw2 { color: black; }
+            body, .stApp { background-color: #f7f9fa; color: black; }
+            .css-18ni7ap, .stMarkdown, .stDataFrame, .css-1cpxqw2 {
+                background-color: #ffffff !important;
+                color: black !important;
+            }
             </style>
         """, unsafe_allow_html=True)
 
