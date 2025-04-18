@@ -17,6 +17,9 @@ combined_data = pd.read_excel("Combined_BTP_ONS_Quarterly_Data.xlsx")
 sao['Month'] = pd.to_datetime(sao['Month'], format="%Y-%m")
 sao['Quarter'] = sao['Month'].dt.to_period('Q').astype(str)
 
+# ✅ Add this line to fix the line plot issue
+sao['Quarter_dt'] = sao['Month'].dt.to_period('Q').dt.to_timestamp() + pd.offsets.QuarterEnd(0)
+
 # --- Tabs ---
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🏠 Overview", "📈 Crime Trends", "😊 Well-being Trends", "🔍 Deep Dive",
@@ -62,34 +65,42 @@ with tab1:
 # --- TAB 2: Crime Trends ---
 with tab2:
     st.header("📈 Crime Trends Explorer")
+    
     crime_types = sorted(sao['Crime type'].dropna().unique())
     selected_crimes = st.multiselect("Select Crime Types", crime_types, default=crime_types[:2])
 
     if selected_crimes:
         filtered = sao[sao['Crime type'].isin(selected_crimes)].copy()
-        crime_trend = filtered.groupby(['Quarter', 'Crime type']).size().reset_index(name='Count')
+        crime_trend = filtered.groupby(['Quarter', 'Quarter_dt', 'Crime type']).size().reset_index(name='Count')
 
         fig3 = px.line(
             crime_trend,
-            x='Quarter', y='Count', color='Crime type',
+            x='Quarter_dt', y='Count', color='Crime type',
             markers=True,
-            title="Crime Trends Over Time",
-            animation_frame='Quarter'
+            title="Crime Trends Over Time (Animated)",
+            animation_frame="Quarter"
         )
+        fig3.update_layout(xaxis_title="Quarter", yaxis_title="Number of Crimes")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.subheader("🗺️ Crime Locations Map")
         latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
-        last_map = filtered[(filtered['Quarter'] == latest_quarter) & (filtered['Crime type'] == selected_crimes[0])]
+        last_map = filtered[
+            (filtered['Quarter'] == latest_quarter) & 
+            (filtered['Crime type'] == selected_crimes[0])
+        ]
 
-        map_data = last_map[['Latitude', 'Longitude']].dropna().rename(columns={"Latitude": "latitude", "Longitude": "longitude"})
+        map_data = last_map[['Latitude', 'Longitude']].dropna().rename(
+            columns={"Latitude": "latitude", "Longitude": "longitude"}
+        )
         if not map_data.empty:
             st.map(map_data, zoom=5)
         else:
             st.warning("No location data available for this crime type in the latest quarter.")
     else:
-        st.warning("Please select at least one crime type to view the trends and map.")
-
+        st.warning("Please select at least one crime type to view trends and map.")
+        
+        
 # --- TAB 3: Well-being Trends ---
 with tab3:
     st.header("😊 Well-being Trends (ONS Area Data)")
