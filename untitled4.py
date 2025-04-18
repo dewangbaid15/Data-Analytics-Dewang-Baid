@@ -222,9 +222,9 @@ st.markdown("### Overview (2022–2024)")
 st.markdown("Gain insights into transport-related crime trends and well-being metrics across the UK.")
 
 # Placeholder data (replace with your actual cleaned dataset)
-btp_data = pd.read_excel("/Users/apple/Desktop/ADAinB.xlsx")
-ons_data = pd.read_excel("/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Area")
-combined_data = pd.read_excel("/Users/apple/Desktop/Combined_BTP_ONS_Quarterly_Data.xlsx")
+btp_data = pd.read_excel("Desktop/ADAinB.xlsx")
+ons_data = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Area")
+combined_data = pd.read_excel("Combined_BTP_ONS_Quarterly_Data.xlsx")
 
 # KPI Cards
 col1, col2, col3 = st.columns(3)
