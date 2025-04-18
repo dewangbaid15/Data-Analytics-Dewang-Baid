@@ -149,3 +149,34 @@ with tab3:
         for i, val in enumerate(compare_df['Anxiety_Mean_Score']):
             ax8.text(val + 0.02, i, f"{val:.2f}", va='center')
         st.pyplot(fig8)
+
+
+
+# --- TAB 4: Crime vs Well-being ---
+with tab4:
+    st.header("🔗 Relationship Between Crime & Well-being")
+
+    # Scatter Plot: Crimes vs Life Satisfaction
+    fig9, ax9 = plt.subplots(figsize=(6, 4))
+    sns.regplot(data=combined_data, x='Total_Crimes', y='Life_Satisfaction_Mean_Score', ax=ax9)
+    ax9.set_title("Total Crimes vs Life Satisfaction")
+    st.pyplot(fig9)
+
+    # Scatter Plot: Crimes vs Anxiety
+    fig10, ax10 = plt.subplots(figsize=(6, 4))
+    sns.regplot(data=combined_data, x='Total_Crimes', y='Anxiety_Mean_Score', ax=ax10)
+    ax10.set_title("Total Crimes vs Anxiety")
+    st.pyplot(fig10)
+
+    st.markdown("---")
+
+    # Correlation (Pearson)
+    from scipy.stats import pearsonr
+    corr_ls, p_ls = pearsonr(combined_data['Total_Crimes'], combined_data['Life_Satisfaction_Mean_Score'])
+    corr_anx, p_anx = pearsonr(combined_data['Total_Crimes'], combined_data['Anxiety_Mean_Score'])
+
+    col12, col13 = st.columns(2)
+    with col12:
+        st.metric("📊 Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
+    with col13:
+        st.metric("📊 Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
