@@ -96,7 +96,7 @@ print(ons_quarterly_avg)
 
 
 
-!conda install seaborn -y
+
 
 ons_file_path = "/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx"
 ons_area = pd.read_excel(ons_file_path, sheet_name="Area")
