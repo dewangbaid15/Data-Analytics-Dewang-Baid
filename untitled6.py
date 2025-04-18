@@ -102,3 +102,50 @@ with tab2:
         st.map(map_data, zoom=6)
     else:
         st.warning("No location data available for this crime type in the latest quarter.")
+
+
+
+# --- TAB 3: Well-being Trends ---
+with tab3:
+    st.header("😊 Well-being Trends (ONS Area Data)")
+    st.success("✅ Tab 3 loaded successfully")
+
+    # Area Filter
+    available_areas = sorted(ons_area['Area'].dropna().unique())
+    selected_area = st.selectbox("Select Region (Area)", available_areas)
+
+    filtered_area = ons_area[ons_area['Area'] == selected_area]
+
+    # Line Chart: Life Satisfaction and Anxiety
+    fig6, ax6 = plt.subplots(figsize=(10, 4))
+    sns.lineplot(data=filtered_area, x='Quarter', y='Life_Satisfaction_Mean_Score', label='Life Satisfaction', marker='o')
+    sns.lineplot(data=filtered_area, x='Quarter', y='Anxiety_Mean_Score', label='Anxiety', marker='o')
+    ax6.set_title(f"Well-being Trends in {selected_area}")
+    ax6.set_ylabel("Mean Score")
+    ax6.tick_params(axis='x', rotation=45)
+    ax6.legend()
+    st.pyplot(fig6)
+
+    st.markdown("---")
+
+    # Bar chart comparing areas in selected quarter
+    selected_quarter = st.selectbox("Compare by Quarter", sorted(ons_area['Quarter'].unique()))
+    compare_df = ons_area[ons_area['Quarter'] == selected_quarter]
+
+    col8, col9 = st.columns(2)
+
+    with col8:
+        fig7, ax7 = plt.subplots(figsize=(10, 4))
+        sns.barplot(data=compare_df, x='Life_Satisfaction_Mean_Score', y='Area', palette='Blues', ax=ax7)
+        ax7.set_title(f"Life Satisfaction by Area ({selected_quarter})")
+        for i, val in enumerate(compare_df['Life_Satisfaction_Mean_Score']):
+            ax7.text(val + 0.02, i, f"{val:.2f}", va='center')
+        st.pyplot(fig7)
+
+    with col9:
+        fig8, ax8 = plt.subplots(figsize=(10, 4))
+        sns.barplot(data=compare_df, x='Anxiety_Mean_Score', y='Area', palette='Purples', ax=ax8)
+        ax8.set_title(f"Anxiety by Area ({selected_quarter})")
+        for i, val in enumerate(compare_df['Anxiety_Mean_Score']):
+            ax8.text(val + 0.02, i, f"{val:.2f}", va='center')
+        st.pyplot(fig8)
