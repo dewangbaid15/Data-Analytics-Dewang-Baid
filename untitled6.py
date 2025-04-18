@@ -42,6 +42,8 @@ with tab1:
         sns.barplot(data=combined_data, x='Quarter', y='Total_Crimes', ax=ax1, palette='Reds')
         ax1.set_title("Total Crimes per Quarter")
         ax1.tick_params(axis='x', rotation=45)
+        for i, val in enumerate(combined_data['Total_Crimes']):
+            ax1.text(i, val + 200, f"{val:,}", ha='center', va='bottom', fontsize=8)
         st.pyplot(fig1)
 
     # Pie chart: Top 6 Crime Types
@@ -61,6 +63,8 @@ with tab1:
         sns.barplot(data=combined_data, x='Quarter', y='Life_Satisfaction_Mean_Score', ax=ax3, palette='Blues')
         ax3.set_title("Life Satisfaction per Quarter")
         ax3.tick_params(axis='x', rotation=45)
+        for i, val in enumerate(combined_data['Life_Satisfaction_Mean_Score']):
+            ax1.text(i, val + 200, f"{val:,}", ha='center', va='bottom', fontsize=8)
         st.pyplot(fig3)
 
     # Anxiety bar chart
@@ -69,6 +73,8 @@ with tab1:
         sns.barplot(data=combined_data, x='Quarter', y='Anxiety_Mean_Score', ax=ax4, palette='Purples')
         ax4.set_title("Anxiety per Quarter")
         ax4.tick_params(axis='x', rotation=45)
+        for i, val in enumerate(combined_data['Anxiety_Mean_Score']):
+            ax1.text(i, val + 200, f"{val:,}", ha='center', va='bottom', fontsize=8)
         st.pyplot(fig4)
 
     st.markdown("---")
@@ -111,4 +117,119 @@ with tab2:
         st.map(map_data, zoom=6)
     else:
         st.warning("No location data available for this crime type in the latest quarter.")
+        
+
+# --- TAB 3: Well-being Trends ---
+with tab3:
+    st.header("😊 Well-being Trends (ONS Area Data)")
+
+    # Area Filter
+    available_areas = sorted(ons_area['Area'].dropna().unique())
+    selected_area = st.selectbox("Select Region (Area)", available_areas)
+
+    filtered_area = ons_area[ons_area['Area'] == selected_area]
+
+    # Line Chart: Life Satisfaction and Anxiety
+    fig6, ax6 = plt.subplots(figsize=(10, 4))
+    sns.lineplot(data=filtered_area, x='Quarter', y='Life_Satisfaction_Mean_Score', label='Life Satisfaction', marker='o')
+    sns.lineplot(data=filtered_area, x='Quarter', y='Anxiety_Mean_Score', label='Anxiety', marker='o')
+    ax6.set_title(f"Well-being Trends in {selected_area}")
+    ax6.set_ylabel("Mean Score")
+    ax6.tick_params(axis='x', rotation=45)
+    ax6.legend()
+    st.pyplot(fig6)
+
+    st.markdown("---")
+
+    # 📊 Bar chart comparing areas in selected quarter
+    selected_quarter = st.selectbox("Compare by Quarter", sorted(ons_area['Quarter'].unique()))
+
+    compare_df = ons_area[ons_area['Quarter'] == selected_quarter]
+
+    col8, col9 = st.columns(2)
+
+    with col8:
+        fig7, ax7 = plt.subplots(figsize=(10, 4))
+        sns.barplot(data=compare_df, x='Life_Satisfaction_Mean_Score', y='Area', palette='Blues', ax=ax7)
+        ax7.set_title(f"Life Satisfaction by Area ({selected_quarter})")
+        st.pyplot(fig7)
+
+    with col9:
+        fig8, ax8 = plt.subplots(figsize=(10, 4))
+        sns.barplot(data=compare_df, x='Anxiety_Mean_Score', y='Area', palette='Purples', ax=ax8)
+        ax8.set_title(f"Anxiety by Area ({selected_quarter})")
+        st.pyplot(fig8)
+
+
+# --- TAB 4: Crime vs Well-being ---
+with tab4:
+    st.header("🔗 Relationship Between Crime & Well-being")
+
+    # Scatter Plot: Crimes vs Life Satisfaction
+    fig9, ax9 = plt.subplots(figsize=(6, 4))
+    sns.regplot(data=combined_data, x='Total_Crimes', y='Life_Satisfaction_Mean_Score', ax=ax9)
+    ax9.set_title("Total Crimes vs Life Satisfaction")
+    st.pyplot(fig9)
+
+    # Scatter Plot: Crimes vs Anxiety
+    fig10, ax10 = plt.subplots(figsize=(6, 4))
+    sns.regplot(data=combined_data, x='Total_Crimes', y='Anxiety_Mean_Score', ax=ax10)
+    ax10.set_title("Total Crimes vs Anxiety")
+    st.pyplot(fig10)
+
+    st.markdown("---")
+
+    # Correlation (Pearson)
+    from scipy.stats import pearsonr
+    corr_ls, p_ls = pearsonr(combined_data['Total_Crimes'], combined_data['Life_Satisfaction_Mean_Score'])
+    corr_anx, p_anx = pearsonr(combined_data['Total_Crimes'], combined_data['Anxiety_Mean_Score'])
+
+    st.metric("📊 Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}")
+    st.metric("📊 Correlation (Crime & Anxiety)", f"{corr_anx:.2f}")
+
+
+# --- TAB 5: Region Explorer (Map) ---
+with tab5:
+    st.header("🗺️ Map & Region Explorer")
+
+    st.write("*This section will allow you to explore average well-being and crime data across regions (if geo-data is available).*")
+
+    # Since no shapefile is provided, use simplified area data (aggregated)
+    area_avg = ons_area.groupby("Area").agg({
+        "Life_Satisfaction_Mean_Score": "mean",
+        "Anxiety_Mean_Score": "mean"
+    }).reset_index()
+
+    col10, col11 = st.columns(2)
+
+    with col10:
+        fig11, ax11 = plt.subplots(figsize=(10, 6))
+        sns.barplot(data=area_avg.sort_values(by='Life_Satisfaction_Mean_Score'), x='Life_Satisfaction_Mean_Score', y='Area', palette='coolwarm', ax=ax11)
+        ax11.set_title("Avg. Life Satisfaction by Area")
+        st.pyplot(fig11)
+
+    with col11:
+        fig12, ax12 = plt.subplots(figsize=(10, 6))
+        sns.barplot(data=area_avg.sort_values(by='Anxiety_Mean_Score'), x='Anxiety_Mean_Score', y='Area', palette='magma', ax=ax12)
+        ax12.set_title("Avg. Anxiety by Area")
+        st.pyplot(fig12)
+
+
+# --- TAB 6: Raw Data ---
+with tab6:
+    st.header("📄 View & Download Raw Data")
+
+    data_option = st.radio("Select Dataset", ("Combined Data", "BTP Data", "ONS Area Data"))
+
+    if data_option == "Combined Data":
+        st.dataframe(combined_data)
+    elif data_option == "BTP Data":
+        st.dataframe(sao)
+    else:
+        st.dataframe(ons_area)
+
+    st.download_button("📥 Download Displayed Data as CSV", data=eval(data_option.replace(" ", "_"))
+                      .to_csv(index=False).encode('utf-8'),
+                      file_name=f"{data_option.replace(' ', '_')}.csv")
+
 
