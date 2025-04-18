@@ -180,3 +180,70 @@ with tab4:
         st.metric("📊 Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
     with col13:
         st.metric("📊 Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
+        
+        
+        
+        
+# --- TAB 5: Region Explorer (Map & Area Comparison) ---
+with tab5:
+    st.header("🗺️ Region Explorer")
+
+    # Aggregated averages by area
+    area_avg = ons_area.groupby("Area").agg({
+        "Life_Satisfaction_Mean_Score": "mean",
+        "Anxiety_Mean_Score": "mean"
+    }).reset_index()
+
+    col14, col15 = st.columns(2)
+
+    with col14:
+        fig11, ax11 = plt.subplots(figsize=(10, 6))
+        sns.barplot(
+            data=area_avg.sort_values(by='Life_Satisfaction_Mean_Score'),
+            x='Life_Satisfaction_Mean_Score',
+            y='Area',
+            palette='coolwarm',
+            ax=ax11
+        )
+        ax11.set_title("Avg. Life Satisfaction by Area")
+        for i, val in enumerate(area_avg.sort_values(by='Life_Satisfaction_Mean_Score')['Life_Satisfaction_Mean_Score']):
+            ax11.text(val + 0.02, i, f"{val:.2f}", va='center')
+        st.pyplot(fig11)
+
+    with col15:
+        fig12, ax12 = plt.subplots(figsize=(10, 6))
+        sns.barplot(
+            data=area_avg.sort_values(by='Anxiety_Mean_Score'),
+            x='Anxiety_Mean_Score',
+            y='Area',
+            palette='magma',
+            ax=ax12
+        )
+        ax12.set_title("Avg. Anxiety by Area")
+        for i, val in enumerate(area_avg.sort_values(by='Anxiety_Mean_Score')['Anxiety_Mean_Score']):
+            ax12.text(val + 0.02, i, f"{val:.2f}", va='center')
+        st.pyplot(fig12)
+
+
+
+# --- TAB 6: Raw Data Viewer ---
+with tab6:
+    st.header("📄 Raw Data Explorer & Download")
+
+    dataset_choice = st.radio("Select Dataset", ("Combined", "BTP", "ONS"))
+
+    if dataset_choice == "Combined":
+        st.dataframe(combined_data)
+        csv_data = combined_data.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download Combined Data", data=csv_data, file_name="Combined_Data.csv", mime="text/csv")
+
+    elif dataset_choice == "BTP":
+        st.dataframe(sao)
+        csv_data = sao.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download BTP Data", data=csv_data, file_name="BTP_Data.csv", mime="text/csv")
+
+    else:
+        st.dataframe(ons_area)
+        csv_data = ons_area.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download ONS Area Data", data=csv_data, file_name="ONS_Area_Data.csv", mime="text/csv")
+
