@@ -242,16 +242,28 @@ with tab8:
             <style>
             body, .stApp { background-color: #121212; color: white; }
             .css-18ni7ap { background-color: #121212 !important; }
-            .css-1cpxqw2 { color: white; }
+            .css-1cpxqw2, .stMarkdown, .stDataFrame {
+                color: white !important;
+            }
             </style>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <style>
-            body, .stApp { background-color: #f7f9fa; color: black; }
-            .css-18ni7ap, .stMarkdown, .stDataFrame, .css-1cpxqw2 {
+            body, .stApp {
+                background-color: #f5f5f5 !important;
+                color: #000000 !important;
+            }
+            .css-18ni7ap, .stMarkdown, .stDataFrame, .css-1cpxqw2, 
+            .stTextInput, .stSelectbox, .stMultiSelect {
                 background-color: #ffffff !important;
-                color: black !important;
+                color: #000000 !important;
+            }
+            .css-1d391kg, .css-qbe2hs {
+                color: #000000 !important;
+            }
+            .block-container {
+                background-color: #fefefe !important;
             }
             </style>
         """, unsafe_allow_html=True)
