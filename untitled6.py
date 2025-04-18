@@ -243,15 +243,21 @@ with tab8:
     if dark_mode:
         st.markdown("""
             <style>
-            .stApp { background-color: #121212; color: white; }
-            .css-1cpxqw2, .css-1v3fvcr, .css-1d391kg { color: white; }
+            body, .stApp {
+                background-color: #121212;
+                color: #ffffff;
+            }
+            .stPlotlyChart .main-svg { background-color: #1e1e1e !important; }
             </style>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <style>
-            .stApp { background-color: #ffffff; color: black; }
-            .css-1cpxqw2, .css-1v3fvcr, .css-1d391kg { color: black; }
+            body, .stApp {
+                background-color: #f9f9f9;
+                color: #111111;
+            }
+            .stPlotlyChart .main-svg { background-color: #ffffff !important; }
             </style>
         """, unsafe_allow_html=True)
 
