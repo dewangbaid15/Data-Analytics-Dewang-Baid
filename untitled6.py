@@ -16,9 +16,8 @@ combined_data = pd.read_excel("Combined_BTP_ONS_Quarterly_Data.xlsx")
 # --- Preprocessing ---
 sao['Month'] = pd.to_datetime(sao['Month'], format="%Y-%m")
 sao['Quarter'] = sao['Month'].dt.to_period('Q').astype(str)
+sao['Quarter_dt'] = sao['Month'].dt.to_period('Q').dt.to_timestamp() + pd.offsets.QuarterEnd(0)
 
-# ✅ Add this line to fix the line plot issue
-sao['Quarter_dt'] = sao['Month'].dt.to_period('Q').dt.to_timestamp() + pd.Timedelta(days=45)
 # --- Tabs ---
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🏠 Overview", "📈 Crime Trends", "😊 Well-being Trends", "🔍 Deep Dive",
@@ -49,14 +48,11 @@ with tab1:
         st.plotly_chart(fig1, use_container_width=True)
 
     with col5:
-        top_crimes = sao['Crime type'].value_counts().nlargest(6)
-        top_crimes_df = top_crimes.reset_index()
-        top_crimes_df.columns = ['Crime type', 'Count']
-
+        top_crimes = sao['Crime type'].value_counts().nlargest(6).reset_index()
         fig2 = px.pie(
-            top_crimes_df,
-            values='Count',
-            names='Crime type',
+            top_crimes,
+            values='Crime type',
+            names='index',
             title="Top 6 Crime Types Distribution"
         )
         st.plotly_chart(fig2, use_container_width=True)
@@ -64,44 +60,29 @@ with tab1:
 # --- TAB 2: Crime Trends ---
 with tab2:
     st.header("📈 Crime Trends Explorer")
-    
-    # Crime Type Filter
+
     crime_types = sorted(sao['Crime type'].dropna().unique())
     selected_crimes = st.multiselect("Select Crime Types", crime_types, default=crime_types[:2])
 
     if selected_crimes:
-        # Filter data
         filtered = sao[sao['Crime type'].isin(selected_crimes)].copy()
-        crime_trend = filtered.groupby(['Quarter', 'Quarter_dt', 'Crime type']).size().reset_index(name='Count')
+        crime_trend = filtered.groupby(['Quarter', 'Crime type']).size().reset_index(name='Count')
 
-        # Animated line chart
-        fig3 = px.line(
+        fig3 = px.bar(
             crime_trend,
-            x='Quarter_dt',
-            y='Count',
+            x='Crime type', y='Count',
             color='Crime type',
-            title="Crime Trends Over Time (Animated)",
-            animation_frame="Quarter",
-            markers=True,
-            line_group='Crime type'
+            animation_frame='Quarter',
+            title="Crime Trends Over Time (Animated Bar Chart)",
+            range_y=[0, crime_trend['Count'].max() + 100],
+            color_discrete_sequence=px.colors.qualitative.Set3
         )
-
-        # Optional x-axis formatting (Quarter as Year Qx)
-        fig3.update_layout(
-            xaxis_title="Quarter",
-            yaxis_title="Number of Crimes",
-            xaxis=dict(tickformat="%Y Q%q")
-        )
-
+        fig3.update_layout(xaxis_title="Crime Type", yaxis_title="Crime Count")
         st.plotly_chart(fig3, use_container_width=True)
 
-        # Map of crimes in latest quarter
         st.subheader("🗺️ Crime Locations Map")
         latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
-        last_map = filtered[
-            (filtered['Quarter'] == latest_quarter) & 
-            (filtered['Crime type'] == selected_crimes[0])
-        ]
+        last_map = filtered[(filtered['Quarter'] == latest_quarter) & (filtered['Crime type'] == selected_crimes[0])]
 
         map_data = last_map[['Latitude', 'Longitude']].dropna().rename(
             columns={"Latitude": "latitude", "Longitude": "longitude"}
@@ -110,10 +91,9 @@ with tab2:
             st.map(map_data, zoom=5)
         else:
             st.warning("No location data available for this crime type in the latest quarter.")
-    
     else:
-        st.warning("Please select at least one crime type to view trends and map.")        
-        
+        st.warning("Please select at least one crime type to view trends and map.")
+
 # --- TAB 3: Well-being Trends ---
 with tab3:
     st.header("😊 Well-being Trends (ONS Area Data)")
@@ -262,13 +242,15 @@ with tab8:
     if dark_mode:
         st.markdown("""
             <style>
-            body, .stApp { background-color: #121212; color: white; }
+            .stApp { background-color: #121212; color: white; }
+            .css-1cpxqw2, .css-1v3fvcr, .css-1d391kg { color: white; }
             </style>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <style>
-            body, .stApp { background-color: #ffffff; color: black; }
+            .stApp { background-color: #ffffff; color: black; }
+            .css-1cpxqw2, .css-1v3fvcr, .css-1d391kg { color: black; }
             </style>
         """, unsafe_allow_html=True)
 
