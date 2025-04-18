@@ -232,10 +232,10 @@ with tab7:
     st.header("🧪 Predictive Insights")
     st.markdown("Predict crime volume trends using simple regression.")
 
-    # Prepare model input
+    # Prepare model input (safe format)
     combined_data['Quarter_Index'] = range(1, len(combined_data) + 1)
-    X = combined_data[['Quarter_Index']]
-    y = combined_data['Total_Crimes']
+    X = combined_data[['Quarter_Index']].values
+    y = combined_data['Total_Crimes'].values
 
     # Fit regression model
     model = LinearRegression()
@@ -246,38 +246,39 @@ with tab7:
     # Forecast future quarters
     st.subheader("🔮 Forecast Future Quarters")
     future = st.slider("How many quarters ahead to predict?", 1, 6, 3)
-    future_index = pd.DataFrame({'Quarter_Index': range(len(X)+1, len(X)+1+future)})
-    future_preds = model.predict(future_index)
 
-    # Generate future quarter labels
-    last_known_quarter = combined_data['Quarter'].iloc[-1]
-    last_year = int(last_known_quarter[:4])
-    last_q = int(last_known_quarter[-1])
+    # Generate future data
+    future_index = pd.DataFrame({'Quarter_Index': range(len(X)+1, len(X)+1+future)})
+    future_preds = model.predict(future_index.values)
+
+    # Generate quarter labels
+    last_q = int(combined_data['Quarter'].iloc[-1][-1])
+    last_y = int(combined_data['Quarter'].iloc[-1][:4])
     future_quarters = []
-    for i in range(1, future + 1):
+    for i in range(1, future+1):
         q = (last_q + i - 1) % 4 + 1
-        y = last_year + ((last_q + i - 1) // 4)
+        y = last_y + ((last_q + i - 1) // 4)
         future_quarters.append(f"{y}Q{q}")
 
-    # Create future DataFrame
+    # Build future DataFrame
     future_df = pd.DataFrame({
         "Quarter": future_quarters,
         "Total_Crimes": [None]*future,
         "Predicted_Crimes": future_preds
     })
 
-    # Combine with original data
+    # Combine with historical
     plot_df = pd.concat([
         combined_data[['Quarter', 'Total_Crimes', 'Predicted_Crimes']],
         future_df
     ], ignore_index=True)
 
-    # Reshape for Plotly
+    # Tidy format for Plotly
     plot_long = plot_df.melt(id_vars='Quarter', value_vars=['Total_Crimes', 'Predicted_Crimes'],
                              var_name='Type', value_name='Crimes')
     plot_long = plot_long.dropna(subset=['Crimes'])
 
-    # Plot
+    # Plot line chart
     fig_pred = px.line(
         plot_long,
         x='Quarter',
@@ -287,11 +288,10 @@ with tab7:
         title="📉 Actual vs Predicted Crime Trends (With Forecast)"
     )
     st.plotly_chart(fig_pred, use_container_width=True)
-    
-    # Recalculate score with original X and y
-    r2_score_val = model.score(X.values.reshape(-1, 1), y.values)
-    st.success(f"Model R² Score: {r2_score_val:.2f}")
-   
+
+    # Model performance score
+    r2_score_val = model.score(X, y)
+    st.success(f"Model R² Score: {r2_score_val:.2f}")   
     
     
 # --- TAB 8: Settings ---
