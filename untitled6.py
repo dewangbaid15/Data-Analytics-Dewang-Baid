@@ -288,8 +288,10 @@ with tab7:
     )
     st.plotly_chart(fig_pred, use_container_width=True)
     
-    r2_score = model.score(X, y)
-    st.success(f"Model R² Score: {r2_score:.2f}")
+    # Recalculate score with original X and y
+    r2_score_val = model.score(X.values.reshape(-1, 1), y.values)
+    st.success(f"Model R² Score: {r2_score_val:.2f}")
+   
     
     
 # --- TAB 8: Settings ---
