@@ -95,7 +95,7 @@ print(ons_quarterly_avg)
 
 
 
-!pip install seaborn
+
 !conda install seaborn -y
 
 ons_file_path = "/Users/apple/Desktop/Life_Satisfaction_Anxiety_All_Quarters.xlsx"
