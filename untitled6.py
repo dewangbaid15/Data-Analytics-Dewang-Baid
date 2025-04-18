@@ -79,6 +79,17 @@ with tab2:
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         st.plotly_chart(fig3, use_container_width=True)
+        
+        
+        st.subheader("📊 Crime Type Composition Over Time (Percentage)")
+        fig_area = px.area(
+            crime_trend,
+            x="Quarter", y="Count", color="Crime type",
+            title="Proportional Crime Type Trends Over Time",
+            groupnorm="percent"
+            )
+        st.plotly_chart(fig_area, use_container_width=True)
+
 
         st.subheader("🗺️ Crime Locations Map")
         latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
@@ -168,6 +179,9 @@ with tab4:
 # --- TAB 5: Region Map ---
 with tab5:
     st.header("🌍 Regional Overview")
+    
+    # --- Heatmap Prep ---
+    heatmap_df = ons_area.pivot(index='Area', columns='Quarter', values='Life_Satisfaction_Mean_Score')
 
     area_avg = ons_area.groupby("Area").agg({
         "Life_Satisfaction_Mean_Score": "mean",
@@ -197,6 +211,10 @@ with tab5:
             color_continuous_scale='Purples'
         )
         st.plotly_chart(fig10, use_container_width=True)
+        
+        st.markdown("---")
+        st.subheader("🧊 Heatmap: Life Satisfaction by Area and Quarter")
+        st.dataframe(heatmap_df.style.background_gradient(cmap='Blues'))
 
 # --- TAB 6: Raw Data Viewer ---
 with tab6:
@@ -212,7 +230,9 @@ with tab6:
 # --- TAB 7: Predictive Insights ---
 with tab7:
     st.header("🧪 Predictive Insights")
-    st.markdown("Predict crime volume trends using simple regression")
+    st.markdown("Predict crime volume trends using simple regression.")
+
+    # Train model
     combined_data['Quarter_Index'] = range(1, len(combined_data) + 1)
     X = combined_data[['Quarter_Index']]
     y = combined_data['Total_Crimes']
@@ -221,16 +241,38 @@ with tab7:
     y_pred = model.predict(X)
     combined_data['Predicted_Crimes'] = y_pred
 
+    # Forecast future quarters
+    st.subheader("🔮 Forecast Future Quarters")
+    future = st.slider("How many quarters ahead to predict?", 1, 6, 3)
+
+    # Generate future predictions
+    future_index = pd.DataFrame({'Quarter_Index': range(len(X)+1, len(X)+1+future)})
+    future_preds = model.predict(future_index)
+    future_quarters = [f"Q{((i % 4) + 1)} 202{5 + ((i + 2) // 4)}" for i in range(future)]
+
+    future_df = pd.DataFrame({
+        "Quarter": future_quarters,
+        "Total_Crimes": [None]*future,
+        "Predicted_Crimes": future_preds
+    })
+
+    plot_df = pd.concat([
+        combined_data[['Quarter', 'Total_Crimes', 'Predicted_Crimes']],
+        future_df
+    ], ignore_index=True)
+
     fig_pred = px.line(
-        combined_data,
+        plot_df,
         x='Quarter',
         y=['Total_Crimes', 'Predicted_Crimes'],
         labels={'value': 'Crimes', 'Quarter': 'Quarter'},
-        title="Actual vs Predicted Crime Trends",
+        title="📉 Actual vs Predicted Crime Trends (With Forecast)",
         markers=True
     )
     st.plotly_chart(fig_pred, use_container_width=True)
+
     st.success(f"Model R² Score: {model.score(X, y):.2f}")
+
 
 # --- TAB 8: Settings ---
 with tab8:
