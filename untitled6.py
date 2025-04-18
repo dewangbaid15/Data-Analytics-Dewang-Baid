@@ -47,15 +47,13 @@ with tab1:
         st.plotly_chart(fig1, use_container_width=True)
 
     with col5:
-        top_crimes = sao['Crime type'].value_counts().nlargest(6).reset_index()
-        top_crimes.columns = ['Crime Type', 'Count']  # Rename for clarity
-        
+        top_crimes = sao['Crime type'].value_counts().nlargest(6).reset_index(name='Count')
         fig2 = px.pie(
             top_crimes,
             values='Count',
-            names='Crime Type',
+            names='index',
             title="Top 6 Crime Types Distribution"
-            )
+        )
         st.plotly_chart(fig2, use_container_width=True)
 
 # --- TAB 2: Crime Trends ---
@@ -71,8 +69,8 @@ with tab2:
         fig3 = px.line(
             crime_trend,
             x='Quarter', y='Count', color='Crime type',
-            markers=True,
-            title="Crime Trends Over Time"
+            markers=True, title="Crime Trends Over Time",
+            animation_frame='Quarter'
         )
         st.plotly_chart(fig3, use_container_width=True)
 
