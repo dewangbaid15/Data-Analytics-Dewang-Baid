@@ -93,9 +93,24 @@ with tab2:
     ax5.set_title(f"{selected_crime} Trend Over Time")
     ax5.tick_params(axis='x', rotation=45)
     st.pyplot(fig5)
+    
+    
+    # 🗺️ Map of recent crimes
+st.subheader(f"🗺️ Locations of {selected_crime} (Latest Quarter Only)")
+latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
 
-    # Map of recent crimes
-    st.subheader(f"🗺️ Locations of {selected_crime} (Latest Quarter Only)")
-    latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
-    map_data = filtered[filtered['Quarter'] == latest_quarter][['Latitude', 'Longitude']].dropna()
+map_data = filtered[filtered['Quarter'] == latest_quarter][['Latitude', 'Longitude']].dropna()
+
+# ✅ Rename columns for Streamlit compatibility
+map_data = map_data.rename(columns={"Latitude": "latitude", "Longitude": "longitude"})
+
+# ✅ Ensure correct data types
+map_data["latitude"] = map_data["latitude"].astype(float)
+map_data["longitude"] = map_data["longitude"].astype(float)
+
+if not map_data.empty:
     st.map(map_data, zoom=6)
+else:
+    st.warning("No location data available for this crime type in the latest quarter.")
+
+    
