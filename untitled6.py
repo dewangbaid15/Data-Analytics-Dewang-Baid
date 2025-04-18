@@ -11,6 +11,10 @@ sao = pd.read_excel("ADAinB.xlsx")
 ons_area = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Area")
 combined_data = pd.read_excel("Combined_BTP_ONS_Quarterly_Data.xlsx")
 
+# --- Preprocess BTP data for tab 2 ---
+sao['Month'] = pd.to_datetime(sao['Month'], format="%Y-%m")
+sao['Quarter'] = sao['Month'].dt.to_period('Q').astype(str)
+
 # --- Tabs for Navigation ---
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🏠 Overview", "📈 Crime Trends", "😊 Well-being Trends", "🔗 Crime vs Well-being",
@@ -69,3 +73,29 @@ with tab1:
 
     st.markdown("---")
     st.markdown("Built with ❤️ using Streamlit | Data: British Transport Police & ONS")
+
+
+# --- TAB 2: Crime Trends ---
+with tab2:
+    st.header("📈 Crime Trends Over Time")
+
+    # Dropdown to filter by crime type
+    crime_types = sorted(sao['Crime type'].dropna().unique())
+    selected_crime = st.selectbox("Select Crime Type", crime_types)
+
+    # Filter by crime type and group by quarter
+    filtered = sao[sao['Crime type'] == selected_crime].copy()
+    trend = filtered.groupby('Quarter').size().reset_index(name='Count')
+
+    # Line chart: Crime trend over time
+    fig5, ax5 = plt.subplots(figsize=(10, 4))
+    sns.lineplot(data=trend, x='Quarter', y='Count', marker='o', ax=ax5)
+    ax5.set_title(f"{selected_crime} Trend Over Time")
+    ax5.tick_params(axis='x', rotation=45)
+    st.pyplot(fig5)
+
+    # Map of recent crimes
+    st.subheader(f"🗺️ Locations of {selected_crime} (Latest Quarter Only)")
+    latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
+    map_data = filtered[filtered['Quarter'] == latest_quarter][['Latitude', 'Longitude']].dropna()
+    st.map(map_data, zoom=6)
