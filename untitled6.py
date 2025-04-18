@@ -46,45 +46,45 @@ with tab1:
             color_continuous_scale='Reds'
         )
         st.plotly_chart(fig1, use_container_width=True)
-        
+
     with col5:
         top_crimes = sao['Crime type'].value_counts().nlargest(6).reset_index()
-        top_crimes.columns = ['Crime Type', 'Count']  # Renaming columns for Plotly compatibility
+        top_crimes.columns = ['Crime type', 'Count']
         fig2 = px.pie(
-        top_crimes,
-        values='Count',
-        names='Crime Type',
-        title="Top 6 Crime Types Distribution"
+            top_crimes,
+            values='Count',
+            names='Crime type',
+            title="Top 6 Crime Types Distribution",
+            color_discrete_sequence=px.colors.qualitative.Safe
         )
         st.plotly_chart(fig2, use_container_width=True)
 
 # --- TAB 2: Crime Trends ---
 with tab2:
     st.header("📈 Crime Trends Explorer")
-
     crime_types = sorted(sao['Crime type'].dropna().unique())
     selected_crimes = st.multiselect("Select Crime Types", crime_types, default=crime_types[:2])
 
     if selected_crimes:
         filtered = sao[sao['Crime type'].isin(selected_crimes)].copy()
-        crime_trend = filtered.groupby(['Quarter', 'Crime type']).size().reset_index(name='Count')
+        crime_trend = filtered.groupby(['Quarter', 'Quarter_dt', 'Crime type']).size().reset_index(name='Count')
 
-        fig3 = px.bar(
+        fig3 = px.line(
             crime_trend,
-            x='Crime type', y='Count',
-            color='Crime type',
-            animation_frame='Quarter',
-            title="Crime Trends Over Time (Animated Bar Chart)",
-            range_y=[0, crime_trend['Count'].max() + 100],
+            x='Quarter_dt', y='Count', color='Crime type',
+            markers=True,
+            title="Crime Trends Over Time",
             color_discrete_sequence=px.colors.qualitative.Set3
         )
-        fig3.update_layout(xaxis_title="Crime Type", yaxis_title="Crime Count")
+        fig3.update_layout(xaxis_title="Quarter", yaxis_title="Number of Crimes")
         st.plotly_chart(fig3, use_container_width=True)
 
         st.subheader("🗺️ Crime Locations Map")
         latest_quarter = filtered['Quarter'].sort_values().iloc[-1]
-        last_map = filtered[(filtered['Quarter'] == latest_quarter) & (filtered['Crime type'] == selected_crimes[0])]
-
+        last_map = filtered[
+            (filtered['Quarter'] == latest_quarter) & 
+            (filtered['Crime type'] == selected_crimes[0])
+        ]
         map_data = last_map[['Latitude', 'Longitude']].dropna().rename(
             columns={"Latitude": "latitude", "Longitude": "longitude"}
         )
@@ -243,21 +243,17 @@ with tab8:
     if dark_mode:
         st.markdown("""
             <style>
-            body, .stApp {
-                background-color: #121212;
-                color: #ffffff;
-            }
-            .stPlotlyChart .main-svg { background-color: #1e1e1e !important; }
+            body, .stApp { background-color: #121212; color: white; }
+            .css-18ni7ap { background-color: #121212 !important; }
+            .css-1cpxqw2 { color: white; }
             </style>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <style>
-            body, .stApp {
-                background-color: #f9f9f9;
-                color: #111111;
-            }
-            .stPlotlyChart .main-svg { background-color: #ffffff !important; }
+            body, .stApp { background-color: #ffffff; color: black; }
+            .css-18ni7ap { background-color: #ffffff !important; }
+            .css-1cpxqw2 { color: black; }
             </style>
         """, unsafe_allow_html=True)
 
