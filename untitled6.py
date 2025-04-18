@@ -232,10 +232,12 @@ with tab7:
     st.header("🧪 Predictive Insights")
     st.markdown("Predict crime volume trends using simple regression.")
 
-    # Train model
+    # Prepare model input
     combined_data['Quarter_Index'] = range(1, len(combined_data) + 1)
     X = combined_data[['Quarter_Index']]
     y = combined_data['Total_Crimes']
+
+    # Fit regression model
     model = LinearRegression()
     model.fit(X, y)
     y_pred = model.predict(X)
@@ -244,35 +246,49 @@ with tab7:
     # Forecast future quarters
     st.subheader("🔮 Forecast Future Quarters")
     future = st.slider("How many quarters ahead to predict?", 1, 6, 3)
-
-    # Generate future predictions
     future_index = pd.DataFrame({'Quarter_Index': range(len(X)+1, len(X)+1+future)})
     future_preds = model.predict(future_index)
-    future_quarters = [f"Q{((i % 4) + 1)} 202{5 + ((i + 2) // 4)}" for i in range(future)]
 
+    # Generate future quarter labels
+    last_known_quarter = combined_data['Quarter'].iloc[-1]
+    last_year = int(last_known_quarter[:4])
+    last_q = int(last_known_quarter[-1])
+    future_quarters = []
+    for i in range(1, future + 1):
+        q = (last_q + i - 1) % 4 + 1
+        y = last_year + ((last_q + i - 1) // 4)
+        future_quarters.append(f"{y}Q{q}")
+
+    # Create future DataFrame
     future_df = pd.DataFrame({
         "Quarter": future_quarters,
         "Total_Crimes": [None]*future,
         "Predicted_Crimes": future_preds
     })
 
+    # Combine with original data
     plot_df = pd.concat([
         combined_data[['Quarter', 'Total_Crimes', 'Predicted_Crimes']],
         future_df
     ], ignore_index=True)
 
+    # Reshape for Plotly
+    plot_long = plot_df.melt(id_vars='Quarter', value_vars=['Total_Crimes', 'Predicted_Crimes'],
+                             var_name='Type', value_name='Crimes')
+    plot_long = plot_long.dropna(subset=['Crimes'])
+
+    # Plot
     fig_pred = px.line(
-        plot_df,
+        plot_long,
         x='Quarter',
-        y=['Total_Crimes', 'Predicted_Crimes'],
-        labels={'value': 'Crimes', 'Quarter': 'Quarter'},
-        title="📉 Actual vs Predicted Crime Trends (With Forecast)",
-        markers=True
+        y='Crimes',
+        color='Type',
+        markers=True,
+        title="📉 Actual vs Predicted Crime Trends (With Forecast)"
     )
     st.plotly_chart(fig_pred, use_container_width=True)
 
     st.success(f"Model R² Score: {model.score(X, y):.2f}")
-
 
 # --- TAB 8: Settings ---
 with tab8:
