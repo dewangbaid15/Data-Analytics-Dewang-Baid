@@ -21,7 +21,7 @@ sao['Quarter_dt'] = sao['Month'].dt.to_period('Q').dt.to_timestamp() + pd.offset
 # --- Tabs ---
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🏠 Overview", "📈 Crime Trends", "😊 Well-being Trends", "🔍 Deep Dive",
-    "🌍 Region Map", "📄 Raw Data", "🧪 Predictive Insights", "⚙️ Settings"
+    "🌍 Region Explorer", "📄 Raw Data", "🧪 Predictive Insights", "⚙️ Settings"
 ])
 
 # --- TAB 1: Overview ---
@@ -176,45 +176,79 @@ with tab4:
     st.metric("Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
     st.metric("Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
 
-# --- TAB 5: Region Map ---
+
+# --- TAB 5: Region Explorer ---
 with tab5:
-    st.header("🌍 Regional Overview")
-    
-    # --- Heatmap Prep ---
-    heatmap_df = ons_area.pivot(index='Area', columns='Quarter', values='Life_Satisfaction_Mean_Score')
+    st.header("🧭 Region Explorer")
 
-    area_avg = ons_area.groupby("Area").agg({
-        "Life_Satisfaction_Mean_Score": "mean",
-        "Anxiety_Mean_Score": "mean"
-    }).reset_index()
+    selected_region = st.selectbox("Select a Region", sorted(ons_area['Area'].dropna().unique()))
 
-    col8, col9 = st.columns(2)
+    # Filter data for selected region
+    regional_wellbeing = ons_area[ons_area['Area'] == selected_region]
+    regional_crime = sao[sao['Falls within'] == selected_region]
 
-    with col8:
-        fig9 = px.bar(
-            area_avg.sort_values(by='Life_Satisfaction_Mean_Score'),
-            x='Life_Satisfaction_Mean_Score', y='Area',
-            color='Life_Satisfaction_Mean_Score',
-            title="Avg. Life Satisfaction by Area",
-            orientation='h',
-            color_continuous_scale='Blues'
-        )
-        st.plotly_chart(fig9, use_container_width=True)
+    # KPI Metrics
+    st.subheader(f"📊 Summary for {selected_region}")
+    colA, colB, colC = st.columns(3)
+    colA.metric("Total Crimes", f"{regional_crime.shape[0]:,}")
+    colB.metric("Avg. Life Satisfaction", f"{regional_wellbeing['Life_Satisfaction_Mean_Score'].mean():.2f}")
+    colC.metric("Avg. Anxiety", f"{regional_wellbeing['Anxiety_Mean_Score'].mean():.2f}")
 
-    with col9:
-        fig10 = px.bar(
-            area_avg.sort_values(by='Anxiety_Mean_Score'),
-            x='Anxiety_Mean_Score', y='Area',
-            color='Anxiety_Mean_Score',
-            title="Avg. Anxiety by Area",
-            orientation='h',
-            color_continuous_scale='Purples'
-        )
-        st.plotly_chart(fig10, use_container_width=True)
-        
-        st.markdown("---")
-        st.subheader("🧊 Heatmap: Life Satisfaction by Area and Quarter")
-        st.dataframe(heatmap_df.style.background_gradient(cmap='Blues'))
+    st.markdown("---")
+
+    # --- 1. Radar Chart: Well-being Region vs National ---
+    national_avg = ons_area[['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score']].mean()
+    regional_avg = regional_wellbeing[['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score']].mean()
+
+    radar_df = pd.DataFrame({
+        "Indicator": ["Life Satisfaction", "Anxiety"],
+        selected_region: regional_avg.values,
+        "UK Average": national_avg.values
+    })
+
+    radar_fig = px.line_polar(
+        radar_df.melt(id_vars="Indicator", var_name="Group", value_name="Score"),
+        r='Score', theta='Indicator', color='Group',
+        line_close=True,
+        title="📡 Regional vs UK Average Well-being"
+    )
+    st.plotly_chart(radar_fig, use_container_width=True)
+
+    # --- 2. Stacked Bar: Top 5 Crime Types in Region ---
+    crime_counts = regional_crime['Crime type'].value_counts().nlargest(5).reset_index()
+    crime_counts.columns = ['Crime Type', 'Count']
+    fig_stack = px.bar(
+        crime_counts,
+        x='Crime Type', y='Count',
+        title="🔎 Top 5 Crime Types in Region",
+        color='Crime Type',
+        text='Count'
+    )
+    st.plotly_chart(fig_stack, use_container_width=True)
+
+    # --- 3. Donut Chart: Well-being Composition ---
+    donut_df = regional_wellbeing[['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score']].mean().reset_index()
+    donut_df.columns = ['Metric', 'Score']
+    fig_donut = px.pie(
+        donut_df,
+        values='Score', names='Metric',
+        hole=0.5,
+        title="😊 Well-being Composition in Region"
+    )
+    st.plotly_chart(fig_donut, use_container_width=True)
+
+    # --- 4. Box Plot: Crime Spread Across All Regions ---
+    st.markdown("### 📦 Crime Spread Comparison (All Regions)")
+    box_data = sao.groupby(['Falls within', 'Quarter']).size().reset_index(name='Crime Count')
+    fig_box = px.box(
+        box_data,
+        x='Falls within', y='Crime Count',
+        title="Crime Distribution Across All Regions per Quarter",
+        points='all'
+    )
+    st.plotly_chart(fig_box, use_container_width=True)
+
+
 
 # --- TAB 6: Raw Data Viewer ---
 with tab6:
