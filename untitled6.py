@@ -199,21 +199,40 @@ with tab6:
     else:
         st.dataframe(combined)
 
-# TAB 7: Predictive Insights
+# ---------------- TAB 7: Predictive Insights --------------------------
 with tab7:
     st.header("🧪 Predictive Insights")
-    combined['Quarter_Index'] = range(1, len(combined) + 1)
-    X = combined[['Quarter_Index']]
-    y = combined['Total_Crimes']
 
-    model = LinearRegression()
-    model.fit(X, y)
-    combined['Predicted_Crimes'] = model.predict(X)
+    if combined.empty:
+        st.error("Combined dataset is empty after filtering. Cannot train predictive model.")
+    elif 'Total_Crimes' not in combined.columns or combined['Total_Crimes'].isnull().all():
+        st.error("Total_Crimes column is missing or contains only null values.")
+    else:
+        # Ensure sorted order by Quarter for consistency
+        combined = combined.sort_values("Quarter")
+        combined = combined.reset_index(drop=True)
 
-    fig8 = px.line(combined, x='Quarter', y=['Total_Crimes', 'Predicted_Crimes'],
-                   title="Actual vs Predicted Crime Volume")
-    st.plotly_chart(fig8, use_container_width=True)
-    st.success(f"Model R² Score: {model.score(X, y):.2f}")
+        # Create index for regression
+        combined['Quarter_Index'] = range(1, len(combined) + 1)
+
+        X = combined[['Quarter_Index']]
+        y = combined['Total_Crimes']
+
+        if X.empty or y.empty or y.isnull().all():
+            st.warning("Insufficient data for regression model.")
+        else:
+            model = LinearRegression()
+            model.fit(X, y)
+            combined['Predicted_Crimes'] = model.predict(X)
+
+            fig8 = px.line(
+                combined, x='Quarter', y=['Total_Crimes', 'Predicted_Crimes'],
+                title="Actual vs Predicted Crime Volume (Linear Regression)",
+                labels={'value': 'Crime Count', 'Quarter': 'Quarter'},
+                markers=True
+            )
+            st.plotly_chart(fig8, use_container_width=True)
+            st.success(f"Model R² Score: {model.score(X, y):.2f}")
 
 # TAB 8: Settings
 with tab8:
