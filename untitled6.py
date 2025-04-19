@@ -31,17 +31,17 @@ merged = pd.merge(crime_counts, combined, on='Quarter', how='inner')
 
 # Tabs
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-    "ð  Overview", "ð Crime Trends", "ð Well-being Trends", "ð Deep Dive",
-    "ð Location Insights", "ð Raw Data", "ð§ª Predictive Insights", "âï¸ Settings"
+    "🏠  Overview", "📈 Crime Trends", "😊 Well-being Trends", "🔍 Deep Dive",
+    "🌍 Location Insights","🧪 Predictive Insights", "📄 Raw Data", "⚙️ Settings"
 ])
 
 # Overview
 with tab1:
-    st.title("ð¨ UK Crime and Public Well-being Dashboard")
+    st.title("🚨 UK Crime and Public Well-being Dashboard")
     col1, col2, col3 = st.columns(3)
-    col1.metric("ð Total Crimes", f"{btp.shape[0]:,}")
-    col2.metric("ð Avg. Life Satisfaction", f"{combined['Life_Satisfaction_Mean_Score'].mean():.2f}")
-    col3.metric("ð Avg. Anxiety", f"{combined['Anxiety_Mean_Score'].mean():.2f}")
+    col1.metric("📊 Total Crimes", f"{btp.shape[0]:,}")
+    col2.metric("😊 Avg. Life Satisfaction", f"{combined['Life_Satisfaction_Mean_Score'].mean():.2f}")
+    col3.metric("😟 Avg. Anxiety", f"{combined['Anxiety_Mean_Score'].mean():.2f}")
 
     col4, col5 = st.columns(2)
     with col4:
@@ -56,8 +56,8 @@ with tab1:
 
 # Crime Trends
 with tab2:
-    st.header("ð Crime Trends Explorer")
-    st.subheader("ð Animated Trends by Crime Type")
+    st.header("📈 Crime Trends Explorer")
+    st.subheader("📱 Animated Trends by Crime Type")
     crime_types = sorted(btp['Crime type'].dropna().unique())
     selected_crimes = st.multiselect("Select Crime Types for Animation", crime_types, default=crime_types[:2])
 
@@ -70,7 +70,7 @@ with tab2:
     else:
         st.warning("Please select at least one crime type to show animated trends.")
 
-    st.subheader("ðºï¸ Crime Location Map")
+    st.subheader("🗺️ Crime Location Map")
     crime_map_type = st.selectbox("Select Crime Type for Map", crime_types)
     map_df = btp[btp['Crime type'] == crime_map_type][['Latitude', 'Longitude']].dropna()
     map_df = map_df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'})
@@ -92,7 +92,7 @@ with tab3:
 
 # Deep Dive
 with tab4:
-    st.header("ð Deep Dive: Crime Type vs Well-being")
+    st.header("😊 Deep Dive: Crime Type vs Well-being")
     st.markdown("Explore how specific types of crime correlate with public well-being over time.")
     crime_options = sorted(merged['Crime type'].dropna().unique())
     selected_crime = st.selectbox("Select a Crime Type", crime_options)
@@ -116,7 +116,7 @@ with tab4:
 
 # Location Insights
 with tab5:
-    st.header("ð Location Insights")
+    st.header("📍 Location Insights")
     state_options = sorted(btp['State'].dropna().unique())
     selected_state = st.selectbox("Select State", state_options)
     filtered_state = btp[btp['State'] == selected_state]
@@ -127,13 +127,13 @@ with tab5:
     selected_city = st.selectbox("Select City", city_options)
     filtered_data = filtered_county[filtered_county['City'] == selected_city]
 
-    st.subheader(f"ð Crime Summary for {selected_city}, {selected_county}, {selected_state}")
+    st.subheader(f"🚨 Crime Summary for {selected_city}, {selected_county}, {selected_state}")
     col1, col2 = st.columns(2)
     col1.metric("Total Crimes", f"{filtered_data.shape[0]:,}")
     top_crime = filtered_data['Crime type'].value_counts().idxmax() if not filtered_data.empty else "N/A"
     col2.metric("Top Crime Type", top_crime)
 
-    st.markdown("### ð Crime Types Distribution")
+    st.markdown("### 🚩 Crime Types Distribution")
     if not filtered_data.empty:
         crime_counts = filtered_data['Crime type'].value_counts().reset_index()
         crime_counts.columns = ['Crime Type', 'Count']
@@ -142,40 +142,22 @@ with tab5:
                                color_continuous_scale='Inferno')
         st.plotly_chart(fig_crime_bar, use_container_width=True)
 
-    st.markdown(f"### ð³ Crime Treemap by County in {selected_state}")
+    st.markdown(f"### 🗾 Crime Treemap by County in {selected_state}")
     treemap_df = filtered_state.groupby('County')['Crime type'].count().reset_index(name='Crime Count')
     fig_treemap = px.treemap(treemap_df, path=['County'], values='Crime Count',
                              title=f"Crime Volume by County in {selected_state}")
     st.plotly_chart(fig_treemap, use_container_width=True)
 
-    st.markdown("### ðºï¸ Crime Hotspots Map")
+    st.markdown("### 🧭 Crime Hotspots Map")
     map_df = filtered_data[['Latitude', 'Longitude']].dropna()
     if not map_df.empty:
         st.map(map_df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}), zoom=7)
     else:
         st.warning("No location data available for this city.")
 
-# Raw Data
+#  Predictive Insights
 with tab6:
-    st.header("ð Raw Data")
-    dataset = st.radio("Choose Dataset", ["BTP", "ONS Area", "ONS Age", "Combined"])
-    if dataset == "BTP":
-        st.subheader("British Transport Police (BTP) Crime Data")
-        st.dataframe(btp)
-    elif dataset == "ONS Area":
-        st.subheader("ONS Well-being Data by Area")
-        st.dataframe(ons_area)
-    elif dataset == "ONS Age":
-        st.subheader("ONS Well-being Data by Age Group")
-        st.dataframe(ons_age)
-    else:
-        st.subheader("Combined BTP & ONS Data")
-        st.write("**Columns in Combined Dataset:**", combined.columns.tolist())
-        st.dataframe(combined)
-
-# Predictive Insights
-with tab7:
-    st.header("ð§ª Predictive Insights")
+    st.header("📊 Predictive Insights")
     if combined.empty:
         st.error("Combined dataset is empty after filtering. Cannot train predictive model.")
     elif 'Total_Crimes' not in combined.columns or combined['Total_Crimes'].isnull().all():
@@ -199,11 +181,29 @@ with tab7:
                            markers=True)
             st.plotly_chart(fig8, use_container_width=True)
             st.success(f"Model RÂ² Score: {model.score(X, y):.2f}")
+            
+#Raw Data
+with tab7:
+    st.header("📈 Raw Data")
+    dataset = st.radio("Choose Dataset", ["BTP", "ONS Area", "ONS Age", "Combined"])
+    if dataset == "BTP":
+        st.subheader("British Transport Police (BTP) Crime Data")
+        st.dataframe(btp)
+    elif dataset == "ONS Area":
+        st.subheader("ONS Well-being Data by Area")
+        st.dataframe(ons_area)
+    elif dataset == "ONS Age":
+        st.subheader("ONS Well-being Data by Age Group")
+        st.dataframe(ons_age)
+    else:
+        st.subheader("Combined BTP & ONS Data")
+        st.write("**Columns in Combined Dataset:**", combined.columns.tolist())
+        st.dataframe(combined)
 
 # Settings
 with tab8:
-    st.header("âï¸ Dashboard Settings")
-    light_mode = st.toggle(" Enable Light Mode")
+    st.header("📲 Dashboard Settings")
+    light_mode = st.toggle("🔅 Enable Light Mode")
     if light_mode:
         st.markdown("<style>body, .stApp { background-color: #ffffff; color: black; }</style>", unsafe_allow_html=True)
     else:
