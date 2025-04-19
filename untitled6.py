@@ -16,6 +16,13 @@ ons_area = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_na
 ons_age = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Age Group")
 combined = pd.read_excel("Combined_BTP_ONS_Quarterly_RegionMapped.xlsx")
 
+# --- Create merged DataFrame for Deep Dive ---
+# Group BTP data by Quarter and Crime type to get count
+crime_counts = btp.groupby(['Quarter', 'Crime type']).size().reset_index(name='Crime_Count')
+
+# Merge with combined well-being data (ensure 'Quarter' is present in both)
+merged = pd.merge(crime_counts, combined, on='Quarter', how='inner')
+
 # --- Optional: Limit combined data to match filtered BTP regions ---
 combined = combined[combined['Region'].isin(btp['County'].unique())]
 
@@ -95,40 +102,47 @@ with tab3:
                    title=f"Well-being in {selected_area}", markers=True)
     st.plotly_chart(fig4, use_container_width=True)
 
-# TAB 4: Deep Dive
+## -------------------------- TAB 4: Deep Dive --------------------------
 with tab4:
-    st.header("🔍 Deep Dive: Crime vs Well-being")
+    st.header("🔍 Deep Dive: Crime Type vs Well-being")
 
-    # --- Task 2: Add circular crime type selector ---
-    crime_types = sorted(btp['Crime type'].dropna().unique())
-    crime_types = ["All Crimes"] + crime_types
-    selected_crime = st.radio("Select Crime Type:", crime_types, horizontal=True)
+    st.markdown("Explore how specific types of crime correlate with public well-being over time.")
 
-    if selected_crime != "All Crimes":
-        filtered_combined = combined[combined['Crime type'] == selected_crime]
-    else:
-        filtered_combined = combined.copy()
+    # Create dynamic selector from merged dataset
+    crime_options = sorted(merged['Crime type'].dropna().unique())
+    selected_crime = st.selectbox("Select a Crime Type", crime_options)
 
-    # Plot: Crime vs Life Satisfaction
-    fig5 = px.scatter(filtered_combined, x='Total_Crimes', y='Life_Satisfaction_Mean_Score',
-                      trendline='ols', title=f"{selected_crime} vs Life Satisfaction")
-    st.plotly_chart(fig5, use_container_width=True)
+    filtered_merged = merged[merged['Crime type'] == selected_crime]
 
-    # Plot: Crime vs Anxiety
-    fig6 = px.scatter(filtered_combined, x='Total_Crimes', y='Anxiety_Mean_Score',
-                      trendline='ols', title=f"{selected_crime} vs Anxiety")
-    st.plotly_chart(fig6, use_container_width=True)
+    # Plot 1: Crime Count vs Life Satisfaction
+    fig_ls = px.scatter(
+        filtered_merged,
+        x='Crime_Count', y='Life_Satisfaction_Mean_Score',
+        trendline='ols',
+        title=f"{selected_crime} vs Life Satisfaction",
+        labels={"Crime_Count": "Quarterly Crime Count"}
+    )
+    st.plotly_chart(fig_ls, use_container_width=True)
 
-    # Correlations
-    if not filtered_combined.empty:
-        corr_ls, p_ls = pearsonr(filtered_combined['Total_Crimes'], filtered_combined['Life_Satisfaction_Mean_Score'])
-        corr_anx, p_anx = pearsonr(filtered_combined['Total_Crimes'], filtered_combined['Anxiety_Mean_Score'])
+    # Plot 2: Crime Count vs Anxiety
+    fig_anx = px.scatter(
+        filtered_merged,
+        x='Crime_Count', y='Anxiety_Mean_Score',
+        trendline='ols',
+        title=f"{selected_crime} vs Anxiety",
+        labels={"Crime_Count": "Quarterly Crime Count"}
+    )
+    st.plotly_chart(fig_anx, use_container_width=True)
+
+    # Correlation scores
+    if not filtered_merged.empty:
+        corr_ls, p_ls = pearsonr(filtered_merged['Crime_Count'], filtered_merged['Life_Satisfaction_Mean_Score'])
+        corr_anx, p_anx = pearsonr(filtered_merged['Crime_Count'], filtered_merged['Anxiety_Mean_Score'])
 
         st.metric("Correlation (Crime & Life Satisfaction)", f"{corr_ls:.2f}", delta=f"p = {p_ls:.3f}")
         st.metric("Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
     else:
-        st.warning("No data available for the selected crime type.")
-        
+        st.warning("No data available for this crime type.")       
         
 # ---------------- TAB 5: Location Insights --------------------------
 with tab5:
