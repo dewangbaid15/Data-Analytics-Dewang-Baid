@@ -16,6 +16,15 @@ ons_area = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_na
 ons_age = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Age Group")
 combined = pd.read_excel("Combined_BTP_ONS_Quarterly_RegionMapped.xlsx")
 
+# Preprocess
+btp['Month'] = pd.to_datetime(btp['Month'], errors='coerce')
+btp['Quarter'] = btp['Month'].dt.to_period("Q").astype(str)
+btp['Quarter_dt'] = btp['Month'].dt.to_period("Q").dt.to_timestamp() + pd.offsets.QuarterEnd(0)
+btp['County'] = btp['County'].astype(str)
+btp['Country'] = btp['Country'].astype(str)
+btp['State'] = btp['State'].astype(str)
+btp['City'] = btp['City'].astype(str)
+
 # --- Create merged DataFrame for Deep Dive ---
 # Group BTP data by Quarter and Crime type to get count
 crime_counts = btp.groupby(['Quarter', 'Crime type']).size().reset_index(name='Crime_Count')
@@ -26,14 +35,7 @@ merged = pd.merge(crime_counts, combined, on='Quarter', how='inner')
 # --- Optional: Limit combined data to match filtered BTP regions ---
 combined = combined[combined['Region'].isin(btp['County'].unique())]
 
-# Preprocess
-btp['Month'] = pd.to_datetime(btp['Month'], errors='coerce')
-btp['Quarter'] = btp['Month'].dt.to_period("Q").astype(str)
-btp['Quarter_dt'] = btp['Month'].dt.to_period("Q").dt.to_timestamp() + pd.offsets.QuarterEnd(0)
-btp['County'] = btp['County'].astype(str)
-btp['Country'] = btp['Country'].astype(str)
-btp['State'] = btp['State'].astype(str)
-btp['City'] = btp['City'].astype(str)
+
 
 # Tabs
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
