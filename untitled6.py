@@ -16,6 +16,9 @@ ons_area = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_na
 ons_age = pd.read_excel("Life_Satisfaction_Anxiety_All_Quarters.xlsx", sheet_name="Age Group")
 combined = pd.read_excel("Combined_BTP_ONS_Quarterly_RegionMapped.xlsx")
 
+valid_states = ['England', 'Scotland', 'Wales']
+combined = combined[combined['Region'].isin(valid_states)]
+
 # Preprocess
 btp['Month'] = pd.to_datetime(btp['Month'], errors='coerce')
 btp['Quarter'] = btp['Month'].dt.to_period("Q").astype(str)
@@ -32,8 +35,6 @@ crime_counts = btp.groupby(['Quarter', 'Crime type']).size().reset_index(name='C
 # Merge with combined well-being data (ensure 'Quarter' is present in both)
 merged = pd.merge(crime_counts, combined, on='Quarter', how='inner')
 
-# --- Optional: Limit combined data to match filtered BTP regions ---
-combined = combined[combined['Region'].isin(btp['County'].unique())]
 
 
 
@@ -202,33 +203,43 @@ with tab5:
         st.map(map_df.rename(columns={'Latitude': 'latitude', 'Longitude': 'longitude'}), zoom=7)
     else:
         st.warning("No location data available for this city.")
-# TAB 6: Raw Data
+
+# ---------------- TAB 6: Raw Data --------------------------
 with tab6:
     st.header("📄 Raw Data")
     dataset = st.radio("Choose Dataset", ["BTP", "ONS Area", "ONS Age", "Combined"])
+
     if dataset == "BTP":
+        st.subheader("British Transport Police (BTP) Crime Data")
         st.dataframe(btp)
     elif dataset == "ONS Area":
+        st.subheader("ONS Well-being Data by Area")
         st.dataframe(ons_area)
     elif dataset == "ONS Age":
+        st.subheader("ONS Well-being Data by Age Group")
         st.dataframe(ons_age)
     else:
-        st.dataframe(combined)
+        st.subheader("Combined BTP & ONS Data")
+        st.write("**Columns in Combined Dataset:**", combined.columns.tolist())
+        st.dataframe(combined.head())
 
 # ---------------- TAB 7: Predictive Insights --------------------------
 with tab7:
     st.header("🧪 Predictive Insights")
 
-    if combined.empty:
+    required_cols = ['Quarter', 'Total_Crimes']
+    missing_cols = [col for col in required_cols if col not in combined.columns]
+
+    if missing_cols:
+        st.error(f"Missing columns in combined data: {missing_cols}")
+    elif combined.empty:
         st.error("Combined dataset is empty after filtering. Cannot train predictive model.")
-    elif 'Total_Crimes' not in combined.columns or combined['Total_Crimes'].isnull().all():
-        st.error("Total_Crimes column is missing or contains only null values.")
+    elif combined['Total_Crimes'].isnull().all():
+        st.error("Total_Crimes column has only null values.")
     else:
-        # Ensure sorted order by Quarter for consistency
+        # Proceed safely
         combined = combined.sort_values("Quarter")
         combined = combined.reset_index(drop=True)
-
-        # Create index for regression
         combined['Quarter_Index'] = range(1, len(combined) + 1)
 
         X = combined[['Quarter_Index']]
