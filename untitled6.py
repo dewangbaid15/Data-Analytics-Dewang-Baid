@@ -81,7 +81,7 @@ with tab2:
 
 # Well-being Trends
 with tab3:
-    st.header("ð Well-being Trends by Area")
+    st.header("🙌 Well-being Trends by Area")
     areas = sorted(ons_area['Area'].dropna().unique())
     selected_area = st.selectbox("Select Region (Area)", areas)
     area_df = ons_area[ons_area['Area'] == selected_area]
