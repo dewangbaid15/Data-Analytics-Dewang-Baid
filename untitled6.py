@@ -168,50 +168,61 @@ with tab5:
 #  Predictive Insights
 with tab6:
     st.markdown("### 🔮 Predictive Insights: What Comes Next?")
-    st.markdown("Use forecasting to project the number of crimes in future quarters. Filter by crime type and region to tailor the analysis for specific scenarios.")
+    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast crime for upcoming quarters — tailored by crime type and region.")
+
     st.header("📊 Forecast Crime Volume (Next 4 Quarters)")
 
-    # Filters
+    # --- Filters with unique keys to avoid Streamlit widget conflicts
     crime_types = sorted(btp['Crime type'].dropna().unique())
-    selected_crime = st.selectbox("Select Crime Type", crime_types)
+    selected_crime = st.selectbox("Select Crime Type", crime_types, key="forecast_crime")
 
     states = sorted(btp['State'].dropna().unique())
-    selected_state = st.selectbox("Select State", states)
+    selected_state = st.selectbox("Select State", states, key="forecast_state")
 
-    filtered = btp[(btp['Crime type'] == selected_crime) & (btp['State'] == selected_state)]
+    # --- Filter dataset
+    forecast_df = btp[(btp['Crime type'] == selected_crime) & (btp['State'] == selected_state)]
 
-    if filtered.empty:
-        st.warning("No data available for selected filters.")
+    if forecast_df.empty:
+        st.warning("No data available for selected crime type and state.")
     else:
-        # Prepare quarterly count
-        filtered['Quarter'] = pd.to_datetime(filtered['Month'], errors='coerce').dt.to_period('Q').astype(str)
-        trend = filtered.groupby('Quarter').size().reset_index(name='Crime_Count')
+        # Aggregate by Quarter
+        forecast_df['Quarter'] = pd.to_datetime(forecast_df['Month'], errors='coerce').dt.to_period('Q').astype(str)
+        trend = forecast_df.groupby('Quarter').size().reset_index(name='Crime_Count')
         trend = trend.sort_values('Quarter')
         trend['Quarter_Index'] = range(1, len(trend) + 1)
 
-        # Train linear regression
+        # Linear Regression Model
         X = trend[['Quarter_Index']]
         y = trend['Crime_Count']
         model = LinearRegression().fit(X, y)
 
-        # Forecast for next 4 quarters
+        # Forecast next 4 quarters
         future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+5)})
         future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']])
-        future_index['Quarter'] = [f"Q{i%4 if i%4 else 4} {2024 + (i//4)}" for i in range(len(trend)+1, len(trend)+5)]
-
-        # Combine actual + forecast
-        trend['Type'] = 'Actual'
+        future_index['Quarter'] = [f"Q{(i - 1) % 4 + 1} {2024 + ((i - 1) // 4)}" for i in future_index['Quarter_Index']]
         future_index['Type'] = 'Forecast'
-        future_index = future_index[['Quarter', 'Crime_Count', 'Type']]
-        combined_forecast = pd.concat([trend[['Quarter', 'Crime_Count', 'Type']], future_index], ignore_index=True)
+
+        # Actual data
+        trend['Type'] = 'Actual'
+
+        # Combine
+        combined = pd.concat([
+            trend[['Quarter', 'Crime_Count', 'Type']],
+            future_index[['Quarter', 'Crime_Count', 'Type']]
+        ], ignore_index=True)
 
         # Plot
-        fig9 = px.line(combined_forecast, x='Quarter', y='Crime_Count', color='Type',
-                       title=f"Crime Forecast for {selected_crime} in {selected_state}",
-                       markers=True)
-        st.plotly_chart(fig9, use_container_width=True)
+        fig = px.line(
+            combined,
+            x='Quarter',
+            y='Crime_Count',
+            color='Type',
+            title=f"{selected_crime} Forecast in {selected_state}",
+            markers=True
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-        st.success(f"Forecast generated using linear trend based on {len(trend)} past quarters.")
+        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting next 4.")
 
             
 #Raw Data
