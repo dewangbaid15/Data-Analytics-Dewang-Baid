@@ -37,6 +37,8 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 
 # Overview
 with tab1:
+    st.markdown("### 🔍 Overview: Setting the Scene")
+    st.markdown("Begin your journey with a high-level snapshot. Understand the scale of crime and public well-being across UK rail transport—setting the stage for deeper analysis.")
     st.title("🚨 UK Crime and Public Well-being Dashboard")
     col1, col2, col3 = st.columns(3)
     col1.metric("📊 Total Crimes", f"{btp.shape[0]:,}")
@@ -56,6 +58,8 @@ with tab1:
 
 # Crime Trends
 with tab2:
+    st.markdown("### 🕵️ Crime Trends: What Happened When?")
+    st.markdown("Explore how crime types have changed over time. Animated trends and maps reveal seasonality and hot zones. This helps us understand which types of incidents are rising—and when.")
     st.header("📈 Crime Trends Explorer")
     st.subheader("📱 Animated Trends by Crime Type")
     crime_types = sorted(btp['Crime type'].dropna().unique())
@@ -81,6 +85,8 @@ with tab2:
 
 # Well-being Trends
 with tab3:
+    st.markdown("### 😊 Well-being Trends: Understanding the People")
+    st.markdown("Track how life satisfaction and anxiety vary across UK regions. These emotional metrics help reveal if rising crime is mirrored by a drop in public well-being.")
     st.header("🙌 Well-being Trends by Area")
     areas = sorted(ons_area['Area'].dropna().unique())
     selected_area = st.selectbox("Select Region (Area)", areas)
@@ -92,6 +98,8 @@ with tab3:
 
 # Deep Dive
 with tab4:
+    st.markdown("### 🔬 Deep Dive: Correlation Between Crime & Well-being")
+    st.markdown("Do more crimes mean more anxiety? Use data-driven correlation plots to examine how specific types of crime may impact public sentiment. This tab connects our past observations with underlying relationships.")
     st.header("😊 Deep Dive: Crime Type vs Well-being")
     st.markdown("Explore how specific types of crime correlate with public well-being over time.")
     crime_options = sorted(merged['Crime type'].dropna().unique())
@@ -116,6 +124,8 @@ with tab4:
 
 # Location Insights
 with tab5:
+    st.markdown("### 🌍 Location Insights: Where Is It Happening?")
+    st.markdown("Drill down into regional crime data to explore where incidents are concentrated. From national trends to specific counties and cities, this tab localises the patterns and helps pinpoint hotspots.")
     st.header("📍 Location Insights")
     state_options = sorted(btp['State'].dropna().unique())
     selected_state = st.selectbox("Select State", state_options)
@@ -157,6 +167,8 @@ with tab5:
 
 #  Predictive Insights
 with tab6:
+    st.markdown("### 🔮 Predictive Insights: What Comes Next?")
+    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast total crimes across quarters — supporting data-driven planning and proactive public safety strategies.")
     st.header("📊 Predictive Insights")
     if combined.empty:
         st.error("Combined dataset is empty after filtering. Cannot train predictive model.")
@@ -184,6 +196,8 @@ with tab6:
             
 #Raw Data
 with tab7:
+    st.markdown("### 📂 Raw Data: Trust the Source")
+    st.markdown("Explore the full datasets powering the dashboard. Transparency matters — and this tab lets users audit, verify, or reuse the underlying data for further analysis.")
     st.header("📈 Raw Data")
     dataset = st.radio("Choose Dataset", ["BTP", "ONS Area", "ONS Age", "Combined"])
     if dataset == "BTP":
@@ -202,6 +216,8 @@ with tab7:
 
 # Settings
 with tab8:
+    st.markdown("### 🎛️ Settings: Personalise Your View")
+    st.markdown("Toggle between light and dark mode to suit your visual preferences. This tab ensures your interaction with the dashboard is both accessible and user-friendly.")
     st.header("📲 Dashboard Settings")
     light_mode = st.toggle("🔅 Enable Light Mode")
     if light_mode:
