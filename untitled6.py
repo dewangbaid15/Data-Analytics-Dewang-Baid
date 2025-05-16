@@ -171,26 +171,27 @@ with tab6:
 
     st.header("📊 Forecast Crime Volume (Next 8 Quarters)")
 
-    # --- Filters with unique keys to avoid Streamlit widget conflicts
+    # --- Filters with unique keys to avoid widget duplication errors
     crime_types = sorted(btp['Crime type'].dropna().unique())
     selected_crime = st.selectbox("Select Crime Type", crime_types, key="forecast_crime")
 
     states = sorted(btp['State'].dropna().unique())
     selected_state = st.selectbox("Select State", states, key="forecast_state")
 
-    # --- Filter dataset
+    # --- Filter data
     forecast_df = btp[(btp['Crime type'] == selected_crime) & (btp['State'] == selected_state)]
 
     if forecast_df.empty:
         st.warning("No data available for selected crime type and state.")
     else:
-        # Aggregate by Quarter
+        # Create 'Quarter' as string and datetime
         forecast_df['Quarter'] = pd.to_datetime(forecast_df['Month'], errors='coerce').dt.to_period('Q').astype(str)
         trend = forecast_df.groupby('Quarter').size().reset_index(name='Crime_Count')
         trend = trend.sort_values('Quarter')
         trend['Quarter_Index'] = range(1, len(trend) + 1)
+        trend['Quarter_dt'] = trend['Quarter'].apply(lambda q: pd.Period(q, freq='Q').start_time)
 
-        # Linear Regression Model
+        # Train regression
         X = trend[['Quarter_Index']]
         y = trend['Crime_Count']
         model = LinearRegression().fit(X, y)
@@ -199,11 +200,9 @@ with tab6:
         future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+9)})
         future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']]).round().astype(int)
 
-        # Fix quarter labels based on last actual quarter
-        last_q = trend['Quarter'].iloc[-1]
-        last_period = pd.Period(last_q, freq='Q')
-        future_quarters = [str(last_period + i) for i in range(1, 9)]
-        future_index['Quarter'] = future_quarters
+        # Generate datetime quarter labels
+        last_period = pd.Period(trend['Quarter'].iloc[-1], freq='Q')
+        future_index['Quarter_dt'] = [last_period.start_time + pd.offsets.QuarterBegin(i) for i in range(1, 9)]
         future_index['Type'] = 'Forecast'
 
         # Actual data
@@ -211,23 +210,24 @@ with tab6:
 
         # Combine actual and forecast
         combined = pd.concat([
-            trend[['Quarter', 'Crime_Count', 'Type']],
-            future_index[['Quarter', 'Crime_Count', 'Type']]
+            trend[['Quarter_dt', 'Crime_Count', 'Type']],
+            future_index[['Quarter_dt', 'Crime_Count', 'Type']]
         ], ignore_index=True)
 
-        # Plot with continuous line
+        # Plot with real datetime x-axis
         fig = px.line(
             combined,
-            x='Quarter',
+            x='Quarter_dt',
             y='Crime_Count',
             color='Type',
             title=f"{selected_crime} Forecast in {selected_state}",
             markers=True,
             line_shape='linear'
         )
+        fig.update_layout(xaxis_title="Quarter", yaxis_title="Crime Count")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting next 8 (till 2026 Q4).")
+        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting next 8 (till 2026Q4).")
 
             
 #Raw Data
