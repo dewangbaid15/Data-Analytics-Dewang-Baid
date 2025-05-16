@@ -168,31 +168,51 @@ with tab5:
 #  Predictive Insights
 with tab6:
     st.markdown("### 🔮 Predictive Insights: What Comes Next?")
-    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast total crimes across quarters — supporting data-driven planning and proactive public safety strategies.")
-    st.header("📊 Predictive Insights")
-    if combined.empty:
-        st.error("Combined dataset is empty after filtering. Cannot train predictive model.")
-    elif 'Total_Crimes' not in combined.columns or combined['Total_Crimes'].isnull().all():
-        st.error("Total_Crimes column is missing or contains only null values.")
+    st.markdown("Use forecasting to project the number of crimes in future quarters. Filter by crime type and region to tailor the analysis for specific scenarios.")
+    st.header("📊 Forecast Crime Volume (Next 4 Quarters)")
+
+    # Filters
+    crime_types = sorted(btp['Crime type'].dropna().unique())
+    selected_crime = st.selectbox("Select Crime Type", crime_types)
+
+    states = sorted(btp['State'].dropna().unique())
+    selected_state = st.selectbox("Select State", states)
+
+    filtered = btp[(btp['Crime type'] == selected_crime) & (btp['State'] == selected_state)]
+
+    if filtered.empty:
+        st.warning("No data available for selected filters.")
     else:
-        combined = combined.sort_values("Quarter").reset_index(drop=True)
-        combined['Quarter_Index'] = range(1, len(combined) + 1)
-        X = combined[['Quarter_Index']]
-        y = combined['Total_Crimes']
+        # Prepare quarterly count
+        filtered['Quarter'] = pd.to_datetime(filtered['Month'], errors='coerce').dt.to_period('Q').astype(str)
+        trend = filtered.groupby('Quarter').size().reset_index(name='Crime_Count')
+        trend = trend.sort_values('Quarter')
+        trend['Quarter_Index'] = range(1, len(trend) + 1)
 
-        if X.empty or y.empty or y.isnull().all():
-            st.warning("Insufficient data for regression model.")
-        else:
-            model = LinearRegression()
-            model.fit(X, y)
-            combined['Predicted_Crimes'] = model.predict(X)
+        # Train linear regression
+        X = trend[['Quarter_Index']]
+        y = trend['Crime_Count']
+        model = LinearRegression().fit(X, y)
 
-            fig8 = px.line(combined, x='Quarter', y=['Total_Crimes', 'Predicted_Crimes'],
-                           title="Actual vs Predicted Crime Volume (Linear Regression)",
-                           labels={'value': 'Crime Count', 'Quarter': 'Quarter'},
-                           markers=True)
-            st.plotly_chart(fig8, use_container_width=True)
-            st.success(f"Model RÂ² Score: {model.score(X, y):.2f}")
+        # Forecast for next 4 quarters
+        future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+5)})
+        future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']])
+        future_index['Quarter'] = [f"Q{i%4 if i%4 else 4} {2024 + (i//4)}" for i in range(len(trend)+1, len(trend)+5)]
+
+        # Combine actual + forecast
+        trend['Type'] = 'Actual'
+        future_index['Type'] = 'Forecast'
+        future_index = future_index[['Quarter', 'Crime_Count', 'Type']]
+        combined_forecast = pd.concat([trend[['Quarter', 'Crime_Count', 'Type']], future_index], ignore_index=True)
+
+        # Plot
+        fig9 = px.line(combined_forecast, x='Quarter', y='Crime_Count', color='Type',
+                       title=f"Crime Forecast for {selected_crime} in {selected_state}",
+                       markers=True)
+        st.plotly_chart(fig9, use_container_width=True)
+
+        st.success(f"Forecast generated using linear trend based on {len(trend)} past quarters.")
+
             
 #Raw Data
 with tab7:
