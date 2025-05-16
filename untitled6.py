@@ -167,9 +167,9 @@ with tab5:
 
 with tab6:
     st.markdown("### 🔮 Predictive Insights: What Comes Next?")
-    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast crime for upcoming quarters — tailored by crime type and region.")
+    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast crime for the next 2 years — tailored by crime type and region.")
 
-    st.header("📊 Forecast Crime Volume (Next 4 Quarters)")
+    st.header("📊 Forecast Crime Volume (Next 8 Quarters)")
 
     # --- Filters with unique keys to avoid Streamlit widget conflicts
     crime_types = sorted(btp['Crime type'].dropna().unique())
@@ -195,14 +195,14 @@ with tab6:
         y = trend['Crime_Count']
         model = LinearRegression().fit(X, y)
 
-        # Forecast next 4 quarters
-        future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+5)})
-        future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']])
+        # Forecast next 8 quarters
+        future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+9)})
+        future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']]).round().astype(int)
 
         # Fix quarter labels based on last actual quarter
         last_q = trend['Quarter'].iloc[-1]
         last_period = pd.Period(last_q, freq='Q')
-        future_quarters = [str(last_period + i) for i in range(1, 5)]
+        future_quarters = [str(last_period + i) for i in range(1, 9)]
         future_index['Quarter'] = future_quarters
         future_index['Type'] = 'Forecast'
 
@@ -215,18 +215,19 @@ with tab6:
             future_index[['Quarter', 'Crime_Count', 'Type']]
         ], ignore_index=True)
 
-        # Plot
+        # Plot with continuous line
         fig = px.line(
             combined,
             x='Quarter',
             y='Crime_Count',
             color='Type',
             title=f"{selected_crime} Forecast in {selected_state}",
-            markers=True
+            markers=True,
+            line_shape='linear'
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting next 4.")
+        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting next 8 (till 2026 Q4).")
 
             
 #Raw Data
