@@ -165,7 +165,6 @@ with tab5:
     else:
         st.warning("No location data available for this city.")
 
-#  Predictive Insights
 with tab6:
     st.markdown("### 🔮 Predictive Insights: What Comes Next?")
     st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast crime for upcoming quarters — tailored by crime type and region.")
@@ -199,13 +198,18 @@ with tab6:
         # Forecast next 4 quarters
         future_index = pd.DataFrame({'Quarter_Index': range(len(trend)+1, len(trend)+5)})
         future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']])
-        future_index['Quarter'] = [f"Q{(i - 1) % 4 + 1} {2024 + ((i - 1) // 4)}" for i in future_index['Quarter_Index']]
+
+        # Fix quarter labels based on last actual quarter
+        last_q = trend['Quarter'].iloc[-1]
+        last_period = pd.Period(last_q, freq='Q')
+        future_quarters = [str(last_period + i) for i in range(1, 5)]
+        future_index['Quarter'] = future_quarters
         future_index['Type'] = 'Forecast'
 
         # Actual data
         trend['Type'] = 'Actual'
 
-        # Combine
+        # Combine actual and forecast
         combined = pd.concat([
             trend[['Quarter', 'Crime_Count', 'Type']],
             future_index[['Quarter', 'Crime_Count', 'Type']]
