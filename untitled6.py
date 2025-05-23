@@ -120,14 +120,16 @@ with tab3:
     if area_df.empty:
         st.warning("No well-being data available for the selected region.")
     else:
+        area_df['Quarter'] = area_df['Quarter'].astype(str)
         fig4 = px.line(
             area_df,
             x='Quarter',
             y=['Life_Satisfaction_Mean_Score', 'Anxiety_Mean_Score'],
             title=f"Well-being Trends in {selected_area}",
             markers=True,
-            hover_data={'Quarter': True, 'Life_Satisfaction_Mean_Score': True, 'Anxiety_Mean_Score': True}
+            labels={'Quarter': 'Quarter', 'value': 'Score', 'variable': 'Metric'}
         )
+        fig4.update_traces(mode='lines+markers')
         st.plotly_chart(fig4, use_container_width=True)
 
     st.info("🔑 **Key takeaway:** Well-being indicators such as life satisfaction and anxiety show meaningful shifts over time and differ regionally.")
@@ -139,14 +141,13 @@ with tab4:
     st.markdown("Do more crimes lead to lower life satisfaction or higher anxiety? Use this tab to explore correlations.")
 
     st.header("📊 Correlation Visuals")
-    crime_options = sorted(merged['Crime type'].dropna().unique())
-    selected_corr_crime = st.selectbox("Select a Crime Type", crime_options, key="corr_crime_type")
+    selected_corr_crime = selected_crime  # use global filter
+    st.markdown(f"Currently viewing: **{selected_corr_crime}** (from global filter)")
     filtered_merged = merged[merged['Crime type'] == selected_corr_crime]
 
     if filtered_merged.empty:
         st.warning("No data available for the selected crime type.")
     else:
-        # Scatter plot: Crime Count vs Life Satisfaction
         fig_ls = px.scatter(
             filtered_merged,
             x='Crime_Count',
@@ -157,7 +158,6 @@ with tab4:
         )
         st.plotly_chart(fig_ls, use_container_width=True)
 
-        # Scatter plot: Crime Count vs Anxiety
         fig_anx = px.scatter(
             filtered_merged,
             x='Crime_Count',
@@ -168,7 +168,6 @@ with tab4:
         )
         st.plotly_chart(fig_anx, use_container_width=True)
 
-        # Pearson correlation metrics
         corr_ls, p_ls = pearsonr(filtered_merged['Crime_Count'], filtered_merged['Life_Satisfaction_Mean_Score'])
         corr_anx, p_anx = pearsonr(filtered_merged['Crime_Count'], filtered_merged['Anxiety_Mean_Score'])
 
@@ -176,7 +175,6 @@ with tab4:
         st.metric("Correlation (Crime & Anxiety)", f"{corr_anx:.2f}", delta=f"p = {p_anx:.3f}")
 
     st.info("🔑 **Key takeaway:** Some crime types are significantly correlated with public sentiment. Stronger correlations may indicate deeper social impacts.")
-
 
 # -------------------- Tab 5: Location Insights --------------------
 with tab5:
