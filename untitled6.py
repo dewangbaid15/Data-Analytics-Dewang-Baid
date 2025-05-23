@@ -165,9 +165,11 @@ with tab5:
     else:
         st.warning("No location data available for this city.")
 
+from sklearn.preprocessing import PolynomialFeatures
+
 with tab6:
     st.markdown("### 🔮 Predictive Insights: What Comes Next?")
-    st.markdown("Can we foresee crime trends before they escalate? This tab uses linear regression to forecast crime for the next 2 years — tailored by crime type and region.")
+    st.markdown("Can we foresee crime trends before they escalate? This tab uses a **polynomial regression model** to forecast crime for the next 2 years — tailored by crime type and region.")
 
     st.header("📊 Forecast Crime Volume (2024Q4 to 2026Q4)")
 
@@ -178,32 +180,36 @@ with tab6:
     states = sorted(btp['State'].dropna().unique())
     selected_state = st.selectbox("Select State", states, key="forecast_state")
 
-    # --- Filter dataset
+    # --- Filter data
     forecast_df = btp[(btp['Crime type'] == selected_crime) & (btp['State'] == selected_state)]
 
     if forecast_df.empty:
         st.warning("No data available for selected crime type and state.")
     else:
-        # Aggregate to quarter
+        # Prepare quarterly trend
         forecast_df['Quarter'] = pd.to_datetime(forecast_df['Month'], errors='coerce').dt.to_period('Q').astype(str)
         trend = forecast_df.groupby('Quarter').size().reset_index(name='Crime_Count')
         trend = trend.sort_values('Quarter')
         trend['Quarter_Index'] = range(1, len(trend) + 1)
         trend['Quarter_dt'] = trend['Quarter'].apply(lambda q: pd.Period(q, freq='Q').start_time)
 
-        # Train model
+        # Polynomial Regression (Degree 2)
         X = trend[['Quarter_Index']]
         y = trend['Crime_Count']
-        model = LinearRegression().fit(X, y)
+        poly = PolynomialFeatures(degree=2)
+        X_poly = poly.fit_transform(X)
+        model = LinearRegression().fit(X_poly, y)
 
-        # Prepare future quarters — start forecast from same as last actual quarter
+        # Forecast next 9 points (start at 2024Q4)
+        future_index = pd.DataFrame({'Quarter_Index': range(len(trend), len(trend) + 9)})
+        X_future_poly = poly.transform(future_index[['Quarter_Index']])
+        future_index['Crime_Count'] = model.predict(X_future_poly).round().astype(int)
+
+        # Start date = start of 2024Q4
         last_q = trend['Quarter'].iloc[-1]
         last_period = pd.Period(last_q, freq='Q')
-        start_date = last_period.start_time  # Use start of 2024Q4
-        future_dates = [start_date + pd.DateOffset(months=3 * i) for i in range(0, 9)]  # 2024Q4 to 2026Q4
-        future_index = pd.DataFrame({'Quarter_dt': future_dates})
-        future_index['Quarter_Index'] = range(len(trend), len(trend) + 9)
-        future_index['Crime_Count'] = model.predict(future_index[['Quarter_Index']]).round().astype(int)
+        start_date = last_period.start_time
+        future_index['Quarter_dt'] = [start_date + pd.DateOffset(months=3 * i) for i in range(0, 9)]
         future_index['Type'] = 'Forecast'
 
         # Actual data
@@ -228,7 +234,7 @@ with tab6:
         fig.update_layout(xaxis_title="Quarter", yaxis_title="Crime Count")
         st.plotly_chart(fig, use_container_width=True)
 
-        st.success(f"Forecast complete. Model trained on {len(trend)} quarters. Forecasting from {last_q} to 2026Q4.")
+        st.success(f"Polynomial forecast complete. Model trained on {len(trend)} quarters. Forecasting from {last_q} to 2026Q4.")
 
             
 #Raw Data
