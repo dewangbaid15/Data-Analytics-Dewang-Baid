@@ -36,6 +36,10 @@ st.sidebar.header("🔍 Global Filters")
 crime_types = sorted(btp['Crime type'].dropna().unique())
 selected_crime = st.sidebar.selectbox("Select Crime Type", crime_types)
 
+# Dashboard Title
+st.markdown("<h1 style='text-align: center; color: white;'>🚆 UK Rail Crime & Well-being Dashboard</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #bbb;'>Powered by BTP and ONS data • Forecasting, Trends & Insights (2022–2026)</p>", unsafe_allow_html=True)
+
 states = sorted(btp['State'].dropna().unique())
 selected_state = st.sidebar.selectbox("Select State", states)
 
